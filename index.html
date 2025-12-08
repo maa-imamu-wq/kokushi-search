@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>国試分析</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+      max-width: 1000px;
+      margin: 24px auto;
+      padding: 0 16px;
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      color: #555;
+      margin-bottom: 1rem;
+    }
+
+    /* ナビゲーション（A-1〜A-4） */
+    .nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .nav button {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .nav button.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .tab-button {
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+    .tab-button.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #2563eb;
+    }
+
+    /* 画面コンテナ */
+    .view {
+      display: none;
+    }
+    .view.active {
+      display: block;
+    }
+
+    /* A-2 以降で使う共通パーツ */
+    .search-box {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    /* A-2 の旧・RBC名検索欄はロジック用に残しつつ画面には表示しない */
+    label[for="rbcInput"],
+    #rbcInput,
+    #searchButton,
+    #clearButton {
+      display: none;
+    }
+    button.primary {
+      margin-top: 8px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      background-color: #2563eb;
+      color: white;
+    }
+    button.secondary {
+      margin-top: 8px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      background-color: #e5e7eb;
+    }
+    .result-count {
+      margin-top: 8px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f3f4f6;
+    }
+    .no-result {
+      margin-top: 12px;
+      color: #b91c1c;
+      font-size: 0.9rem;
+    }
+    .section-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+      margin-top: 8px;
+    }
+    #a3Body {
+      margin-top: 4px;
+    }
+    #a3Comment p {
+      margin: 4px 0;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <h1>国試分析</h1>
+  <p class="subtitle">国試分析画面</p>
+
+  <!-- A-1〜A-4 ナビゲーション -->
+  <div class="nav">
+    <button id="navA1" class="active">A-1 ホーム</button>
+    <button id="navA2">A-2 RBCから検索</button>
+    <button id="navA4">A-4 出題ランキングから検索</button>
+  </div>
+
+  <!-- A-1 ホーム画面 -->
+  <div id="viewA1" class="view active">
+    <p>国試のRBC別分析ツールです。</p>
+    <p class="section-title">メニュー</p>
+    <ul>
+      <li><button class="primary" onclick="showView('A2')">RBCから検索（A-2へ）</button></li>
+      <li><button class="secondary" onclick="showView('A4')">出題ランキングから検索（A-4へ）</button></li>
+    </ul>
+  </div>
+
+  <!-- A-2 RBCから検索画面 -->
+  <div id="viewA2" class="view">
+    <h2>国試分析画面 RBCから検索（A-2）</h2>
+
+    <!-- 章タブ / RBCタブ -->
+    <div id="chapterTabsContainer" style="margin-top: 8px;">
+      <div class="section-title">章</div>
+      <div id="chapterTabs" class="tabs"></div>
+    </div>
+
+    <div id="rbcTabsContainer" style="margin-top: 8px;">
+      <div class="section-title">RBC</div>
+      <div style="margin-bottom: 4px;">
+        <input
+          id="rbcFilterInput"
+          type="text"
+          placeholder="この章のRBCを絞り込み（例: 酸素, 上皮 など）"
+          style="width:100%; padding:6px 8px; border-radius:4px; border:1px solid #ccc; font-size:0.85rem;"
+        />
+      </div>
+      <div id="rbcTabs" class="tabs"></div>
+    </div>
+
+    <!-- RBCの概要表示（章 / RBC / 合計〜問〜位 …） -->
+    <div id="a2Summary" style="margin: 12px 0; display:none;">
+      <div><span class="section-title">章</span> <span id="a2Chapter"></span></div>
+      <div><span class="section-title">RBC</span> <span id="a2RbcName"></span></div>
+      <div>
+        <span class="section-title">合計</span>
+        <span id="a2TotalAll"></span>問
+        （<span id="a2TotalAllRank"></span>位）
+      </div>
+      <div>
+        必修 <span id="a2Kishu"></span>問　
+        一般 <span id="a2Ippan"></span>問　
+        状況 <span id="a2Jokyo"></span>問
+      </div>
+    </div>
+
+    <!-- 🔍 検索エリア（いままで作ってきたもの） -->
+    <div class="search-box">
+      <label for="rbcInput">RBC名で検索</label>
+      <input id="rbcInput" type="text" placeholder="例: 細胞総論、上皮組織 など" />
+      <button id="searchButton" class="primary">検索</button>
+      <button id="clearButton" class="secondary">クリア</button>
+
+      <div style="margin-top: 12px;">
+        <label for="rbcCsvInput">RBCマスタCSV(rbc_small)を読み込む</label>
+        <input id="rbcCsvInput" type="file" accept=".csv,.tsv" />
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label for="questionCsvInput">問題CSV(項目.csv)を読み込む</label>
+        <input id="questionCsvInput" type="file" accept=".csv,.tsv" />
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label for="statsCsvInput">正答率CSV(正答率.csv)を読み込む</label>
+        <input id="statsCsvInput" type="file" accept=".csv,.tsv" />
+      </div>
+
+      <div id="resultCount" class="result-count"></div>
+    </div>
+
+    <!-- 📋 結果表示エリア -->
+    <div id="results"></div>
+  </div>
+
+  <!-- A-3 問題詳細画面 -->
+  <div id="viewA3" class="view">
+    <h2>国試分析画面 問題詳細（A-3）</h2>
+
+    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div id="a3Code" style="font-size: 2rem; font-weight: bold;">問題番号</div>
+      <div>
+        <button id="a3EditToggleButton" class="primary" style="margin-right: 8px;">編集</button>
+        <button class="secondary" onclick="showView('A2')">前の検索へ（A-2に戻る）</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div class="section-title">問題文</div>
+      <div id="a3Body"></div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div class="section-title">選択肢</div>
+      <ol id="a3Choices" style="padding-left: 1.5rem;"></ol>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div class="section-title">正答率</div>
+      <div id="a3Rate"></div>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <div class="section-title">解説</div>
+      <div id="a3Comment"></div>
+    </div>
+
+    <div id="a3EditSection" style="margin-top: 16px; display:none;">
+      <div class="section-title">編集モード</div>
+
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditBody">問題文（編集）</label>
+        <textarea id="a3EditBody"></textarea>
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditChoice1">選択肢1</label>
+        <input id="a3EditChoice1" type="text" />
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditChoice2">選択肢2</label>
+        <input id="a3EditChoice2" type="text" />
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditChoice3">選択肢3</label>
+        <input id="a3EditChoice3" type="text" />
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditChoice4">選択肢4</label>
+        <input id="a3EditChoice4" type="text" />
+      </div>
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditChoice5">選択肢5</label>
+        <input id="a3EditChoice5" type="text" />
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label for="a3EditComment">解説（編集）</label>
+        <textarea id="a3EditComment"></textarea>
+      </div>
+
+      <button id="a3SaveButton" class="primary">保存</button>
+      <button id="a3CancelButton" class="secondary">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- A-4 出題ランキング画面 -->
+  <div id="viewA4" class="view">
+    <h2>国試分析画面 出題ランキングから検索（A-4）</h2>
+
+    <div class="search-box">
+      <div style="display:flex; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1 1 200px;">
+          <label for="a4ChapterSelect">章</label>
+          <select id="a4ChapterSelect" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
+            <option value="">すべて</option>
+          </select>
+        </div>
+        <div style="flex:1 1 200px;">
+          <label for="a4BasisSelect">基準</label>
+          <select id="a4BasisSelect" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
+            <option value="totalAll">合計問題数</option>
+            <option value="totalKishu">必修問題数</option>
+            <option value="totalIppan">一般問題数</option>
+            <option value="totalJokyo">状況問題数</option>
+            <option value="totalOver70">正答率70%以上の問題数</option>
+          </select>
+        </div>
+      </div>
+      <p class="subtitle" style="margin-top:8px; font-size:0.8rem;">
+        ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
+      </p>
+    </div>
+
+    <div id="a4RankingCount" class="result-count"></div>
+
+    <div id="a4RankingTable"></div>
+
+    <button class="secondary" onclick="showView('A1')" style="margin-top:16px;">ホーム（A-1）に戻る</button>
+  </div>
+
+  <!-- 📦 JavaScript -->
+  <script>
+    // ============================
+    // 0) ビュー切り替え（A-1〜A-4）
+    // ============================
+    const viewA1 = document.getElementById("viewA1");
+    const viewA2 = document.getElementById("viewA2");
+    const viewA3 = document.getElementById("viewA3");
+    const viewA4 = document.getElementById("viewA4");
+
+    const navA1 = document.getElementById("navA1");
+    const navA2 = document.getElementById("navA2");
+    const navA4 = document.getElementById("navA4");
+
+    function showView(name) {
+      // view の表示/非表示
+      [viewA1, viewA2, viewA3, viewA4].forEach((v) => v.classList.remove("active"));
+      if (name === "A1") viewA1.classList.add("active");
+      if (name === "A2") viewA2.classList.add("active");
+      if (name === "A3") viewA3.classList.add("active");
+      if (name === "A4") viewA4.classList.add("active");
+
+      // ナビの状態
+      [navA1, navA2, navA4].forEach((b) => b.classList.remove("active"));
+      if (name === "A1") navA1.classList.add("active");
+      if (name === "A2") navA2.classList.add("active");
+      if (name === "A4") navA4.classList.add("active");
+    }
+
+    // ナビボタンにも showView をつなぐ
+    navA1.addEventListener("click", () => showView("A1"));
+    navA2.addEventListener("click", () => showView("A2"));
+    navA4.addEventListener("click", () => showView("A4"));
+
+    // ============================
+    // 1) データ配列
+    // ============================
+    const questions = []; // 項目.csv の問題データ
+    const rbcItems = [];  // rbc_small.csv の内容
+    const questionStats = []; // 正答率.csv のデータ
+
+    // ============================
+    // 2) HTML要素をつかむ（A-2）
+    // ============================
+    const rbcInput = document.getElementById("rbcInput");
+    const searchButton = document.getElementById("searchButton");
+    const clearButton = document.getElementById("clearButton");
+    const resultsDiv = document.getElementById("results");
+    const resultCount = document.getElementById("resultCount");
+    const rbcCsvInput = document.getElementById("rbcCsvInput");
+
+    const questionCsvInput = document.getElementById("questionCsvInput");
+    const statsCsvInput = document.getElementById("statsCsvInput");
+
+    // A-2 サマリー部
+    const a2Summary = document.getElementById("a2Summary");
+    const a2Chapter = document.getElementById("a2Chapter");
+    const a2RbcName = document.getElementById("a2RbcName");
+    const a2TotalAll = document.getElementById("a2TotalAll");
+    const a2TotalAllRank = document.getElementById("a2TotalAllRank");
+    const a2Kishu = document.getElementById("a2Kishu");
+    const a2Ippan = document.getElementById("a2Ippan");
+    const a2Jokyo = document.getElementById("a2Jokyo");
+
+    // A-3 問題詳細部
+    const a3Code = document.getElementById("a3Code");
+    const a3Body = document.getElementById("a3Body");
+    const a3Choices = document.getElementById("a3Choices");
+    const a3Rate = document.getElementById("a3Rate");
+    const a3Comment = document.getElementById("a3Comment");
+
+    // A-3 編集要素
+    const a3EditToggleButton = document.getElementById("a3EditToggleButton");
+    const a3EditSection = document.getElementById("a3EditSection");
+    const a3EditBody = document.getElementById("a3EditBody");
+    const a3EditChoice1 = document.getElementById("a3EditChoice1");
+    const a3EditChoice2 = document.getElementById("a3EditChoice2");
+    const a3EditChoice3 = document.getElementById("a3EditChoice3");
+    const a3EditChoice4 = document.getElementById("a3EditChoice4");
+    const a3EditChoice5 = document.getElementById("a3EditChoice5");
+    const a3EditComment = document.getElementById("a3EditComment");
+    const a3SaveButton = document.getElementById("a3SaveButton");
+    const a3CancelButton = document.getElementById("a3CancelButton");
+
+    // A-2 章 / RBC タブ
+    const chapterTabs = document.getElementById("chapterTabs");
+    const rbcTabs = document.getElementById("rbcTabs");
+    const rbcFilterInput = document.getElementById("rbcFilterInput");
+    // A-4 ランキング用要素
+    const a4ChapterSelect = document.getElementById("a4ChapterSelect");
+    const a4BasisSelect = document.getElementById("a4BasisSelect");
+    const a4RankingTable = document.getElementById("a4RankingTable");
+    const a4RankingCount = document.getElementById("a4RankingCount");
+    // 状態管理用
+    let currentChapter = null;
+    let currentRbc = null;
+    let currentRbcFilter = "";
+    let currentQuestionCode = null;
+    let currentA4Chapter = "";
+    let currentA4Basis = "totalAll";
+
+    // ============================
+    // 3) 検索ボタン（A-2）
+    // ============================
+    searchButton.addEventListener("click", () => {
+      const keyword = rbcInput.value.trim();
+      if (keyword === "") {
+        alert("RBC名を入力してください。");
+        return;
+      }
+
+      const lowerKeyword = keyword.toLowerCase();
+
+      // A-2 下半分：項目.csv から該当RBCの問題リストを取得
+      const qs = questions.filter(
+        (q) => q.rbcName && q.rbcName.toLowerCase().includes(lowerKeyword)
+      );
+
+      // A-2 上部サマリーも questions ベースで表示
+      if (qs.length > 0) {
+        const qfirst = qs[0];
+        a2Chapter.textContent = qfirst.chapter || "";
+        a2RbcName.textContent = qfirst.rbcName || "";
+        a2TotalAll.textContent = qs.length;
+        a2TotalAllRank.textContent = "";
+        a2Kishu.textContent = "";
+        a2Ippan.textContent = "";
+        a2Jokyo.textContent = "";
+        a2Summary.style.display = "block";
+      } else {
+        a2Summary.style.display = "none";
+      }
+
+      renderQuestionList(qs, keyword);
+      showView("A2"); // A-1 から検索してきた場合でも A-2 を表示する
+    });
+
+    // Enterキーでも検索
+    rbcInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        searchButton.click();
+      }
+    });
+
+    // クリアボタン
+    clearButton.addEventListener("click", () => {
+      rbcInput.value = "";
+      resultCount.textContent = "";
+      resultsDiv.innerHTML = "";
+      a2Summary.style.display = "none";
+      rbcInput.focus();
+    });
+
+    // ============================
+    // 4) RBCマスタCSV の読み込み
+    // ============================
+    rbcCsvInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const text = e.target.result;
+        loadRbcItemsFromCsv(text);
+        alert("rbc_small の読み込みが完了しました。RBC名で検索できます。");
+      };
+
+      reader.onerror = () => {
+        alert("rbc_small 読み込み中にエラーが発生しました。");
+      };
+
+      reader.readAsText(file, "UTF-8");
+    });
+
+    function loadRbcItemsFromCsv(csvText) {
+      const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+
+      if (lines.length <= 1) {
+        alert("CSVにデータがありません。");
+        return;
+      }
+
+      const dataLines = lines.slice(1);
+      rbcItems.length = 0;
+
+      for (const line of dataLines) {
+        const cols = line.split(/\t|,/); // タブ or カンマ両対応
+
+        const item = {
+          id: Number(cols[0]) || null,
+          chapter: cols[1] || "",
+          major: cols[2] || "",
+          middle: cols[3] || "",
+          rbcName: cols[4] || "",
+
+          order: Number(cols[5]) || null,
+          valid: cols[6] === "1",
+          master: cols[7] === "1",
+
+          totalAll: Number(cols[8]) || 0,
+          totalAllRank: Number(cols[9]) || null,
+
+          totalKishu: Number(cols[10]) || 0,
+          totalKishuRank: Number(cols[11]) || null,
+
+          totalIppan: Number(cols[12]) || 0,
+          totalIppanRank: Number(cols[13]) || null,
+
+          totalJokyo: Number(cols[14]) || 0,
+          totalJokyoRank: Number(cols[15]) || null,
+
+          totalOver70: Number(cols[16]) || 0,
+          totalOver70Rank: Number(cols[17]) || null,
+        };
+
+        if (item.rbcName) {
+          rbcItems.push(item);
+        }
+      }
+
+      console.log("RBC件数:", rbcItems.length);
+      buildChapterTabs();
+      buildA4Filters();
+    }
+
+    // ============================
+    // 章タブ / RBCタブの構築
+    // ============================
+    function buildChapterTabs() {
+      if (!rbcItems.length || !chapterTabs) return;
+
+      // 一意な章一覧を取得
+      const chapters = [...new Set(
+        rbcItems
+          .map((item) => item.chapter)
+          .filter((ch) => ch && ch.trim() !== "")
+      )];
+
+      chapters.sort();
+
+      chapterTabs.innerHTML = chapters
+        .map(
+          (ch) =>
+            `<button class="tab-button" data-chapter="${ch}">${ch}</button>`
+        )
+        .join("");
+
+      currentChapter = null;
+      currentRbc = null;
+      if (rbcTabs) {
+        rbcTabs.innerHTML = "";
+      }
+
+      // クリックイベントを設定
+      Array.from(chapterTabs.querySelectorAll("button")).forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentChapter = btn.getAttribute("data-chapter");
+
+          // 見た目の active 切り替え
+          chapterTabs
+            .querySelectorAll("button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          // RBCフィルタをリセット
+          currentRbcFilter = "";
+          if (rbcFilterInput) {
+            rbcFilterInput.value = "";
+          }
+
+          buildRbcTabs();
+        });
+      });
+    }
+
+    function buildRbcTabs() {
+      if (!currentChapter || !rbcTabs) {
+        if (rbcTabs) rbcTabs.innerHTML = "";
+        return;
+      }
+
+      // フィルタ入力値でRBC名を絞り込む
+      const lowerFilter = currentRbcFilter
+        ? currentRbcFilter.trim().toLowerCase()
+        : "";
+
+      // フィルタが空のときはタブを表示しない
+      if (!lowerFilter) {
+        rbcTabs.innerHTML = "";
+        currentRbc = null;
+        return;
+      }
+
+      const rbcs = rbcItems
+        .filter((item) => item.chapter === currentChapter)
+        .map((item) => item.rbcName)
+        .filter((name) => {
+          if (!name) return false;
+          const trimmed = name.trim();
+          if (!trimmed) return false;
+          return trimmed.toLowerCase().includes(lowerFilter);
+        });
+
+      const uniqueRbcs = [...new Set(rbcs)];
+      uniqueRbcs.sort();
+
+      rbcTabs.innerHTML = uniqueRbcs
+        .map(
+          (name) =>
+            `<button class="tab-button" data-rbc="${name}">${name}</button>`
+        )
+        .join("");
+
+      currentRbc = null;
+
+      // クリックでRBCを選択し、既存の検索ロジックを呼び出す
+      Array.from(rbcTabs.querySelectorAll("button")).forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentRbc = btn.getAttribute("data-rbc");
+
+          rbcTabs
+            .querySelectorAll("button")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+
+          // 既存の検索処理を再利用
+          if (rbcInput) {
+            rbcInput.value = currentRbc;
+            searchButton.click();
+          }
+        });
+      });
+    }
+
+    // RBC名フィルタ入力: タイプするたびにタブを絞り込み
+    if (rbcFilterInput) {
+      rbcFilterInput.addEventListener("input", () => {
+        currentRbcFilter = rbcFilterInput.value || "";
+        buildRbcTabs();
+      });
+    }
+
+    // ============================
+    // A-4: 章・基準のフィルタとランキング表
+    // ============================
+    function buildA4Filters() {
+      if (!a4ChapterSelect || !rbcItems.length) return;
+
+      // 章セレクトの中身を構築
+      const chapters = [...new Set(
+        rbcItems
+          .map((item) => item.chapter)
+          .filter((ch) => ch && ch.trim() !== "")
+      )].sort();
+
+      // 先頭は「すべて」
+      a4ChapterSelect.innerHTML =
+        '<option value="">すべて</option>' +
+        chapters.map((ch) => `<option value="${ch}">${ch}</option>`).join("");
+
+      // 初期値
+      currentA4Chapter = "";
+      currentA4Basis = a4BasisSelect ? a4BasisSelect.value : "totalAll";
+
+      // イベント: 章変更
+      a4ChapterSelect.addEventListener("change", () => {
+        currentA4Chapter = a4ChapterSelect.value;
+        renderA4RankingTable();
+      });
+
+      // イベント: 基準変更
+      if (a4BasisSelect) {
+        a4BasisSelect.addEventListener("change", () => {
+          currentA4Basis = a4BasisSelect.value;
+          renderA4RankingTable();
+        });
+      }
+
+      // 初回描画
+      renderA4RankingTable();
+    }
+
+    function renderA4RankingTable() {
+      if (!a4RankingTable) return;
+
+      let list = rbcItems.slice();
+
+      // 章でフィルタ
+      if (currentA4Chapter) {
+        list = list.filter((item) => item.chapter === currentA4Chapter);
+      }
+
+      // ソート用のスコアを決める
+      const key = currentA4Basis || "totalAll";
+
+      list = list
+        .filter((item) => typeof item[key] === "number")
+        .sort((a, b) => {
+          const av = a[key] || 0;
+          const bv = b[key] || 0;
+          if (bv !== av) return bv - av; // 降順
+          // スコアが同じときはRBC名で昇順
+          return (a.rbcName || "").localeCompare(b.rbcName || "");
+        });
+
+      // ランキングが空の場合
+      if (!list.length) {
+        a4RankingTable.innerHTML =
+          '<p class="no-result">ランキング対象となるRBCがありません。</p>';
+        if (a4RankingCount) a4RankingCount.textContent = "";
+        return;
+      }
+
+      if (a4RankingCount) {
+        a4RankingCount.textContent = `${list.length}件のRBCがあります`;
+      }
+
+      const rowsHtml = list
+        .map((item, index) => {
+          const rank = index + 1;
+          return `
+            <tr onclick="goToRbcFromA4('${item.rbcName}')" style="cursor:pointer;">
+              <td>${rank}</td>
+              <td>${item.rbcName}</td>
+              <td>${item.totalAll || 0}</td>
+              <td>${item.totalAll || 0}</td>
+              <td>${item.totalKishu || 0}</td>
+              <td>${item.totalIppan || 0}</td>
+              <td>${item.totalJokyo || 0}</td>
+              <td>${item.totalOver70 || 0}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      const tableHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>順位</th>
+              <th>RBC</th>
+              <th>合計点数</th>
+              <th>合計問題数</th>
+              <th>必修問題数</th>
+              <th>一般問題数</th>
+              <th>状況問題数</th>
+              <th>正答率70%以上の問題数</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      `;
+
+      a4RankingTable.innerHTML = tableHtml;
+    }
+
+    // ============================
+    // A-4: ランキング行クリックで A-2 の該当RBCへ遷移
+    // ============================
+    function goToRbcFromA4(rbcName) {
+      if (!rbcName) return;
+      if (rbcInput) {
+        rbcInput.value = rbcName;
+        showView("A2");
+        searchButton.click();
+      } else {
+        // 念のため
+        alert("RBC検索ボックスが見つかりませんでした。");
+      }
+    }
+    // ============================
+    if (a3EditToggleButton) {
+      a3EditToggleButton.addEventListener("click", () => {
+        if (!currentQuestionCode) {
+          alert("編集する問題が選択されていません。");
+          return;
+        }
+        const q = questions.find((item) => item.code === currentQuestionCode);
+        if (!q) {
+          alert(`問題データが見つかりません（${currentQuestionCode}）。`);
+          return;
+        }
+        // フォームに現在の値を反映
+        a3EditBody.value = q.body || "";
+        a3EditChoice1.value = q.choices[0] || "";
+        a3EditChoice2.value = q.choices[1] || "";
+        a3EditChoice3.value = q.choices[2] || "";
+        a3EditChoice4.value = q.choices[3] || "";
+        a3EditChoice5.value = q.choices[4] || "";
+        a3EditComment.value = q.comment || "";
+        a3EditSection.style.display = "block";
+        // 編集セクションまで自動スクロール
+        a3EditSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    if (a3CancelButton) {
+      a3CancelButton.addEventListener("click", () => {
+        a3EditSection.style.display = "none";
+      });
+    }
+
+    if (a3SaveButton) {
+      a3SaveButton.addEventListener("click", () => {
+        if (!currentQuestionCode) {
+          alert("編集する問題が選択されていません。");
+          return;
+        }
+        const q = questions.find((item) => item.code === currentQuestionCode);
+        if (!q) {
+          alert(`問題データが見つかりません（${currentQuestionCode}）。`);
+          return;
+        }
+        // 入力値で questions 配列内のデータを更新
+        q.body = a3EditBody.value || "";
+        q.choices[0] = a3EditChoice1.value || "";
+        q.choices[1] = a3EditChoice2.value || "";
+        q.choices[2] = a3EditChoice3.value || "";
+        q.choices[3] = a3EditChoice4.value || "";
+        q.choices[4] = a3EditChoice5.value || "";
+        q.comment = a3EditComment.value || "";
+
+        // 編集フォームを閉じて再描画
+        a3EditSection.style.display = "none";
+        openQuestionDetail(currentQuestionCode);
+      });
+    }
+
+    // ============================
+    // 問題CSV(項目.csv) の読み込み
+    // ============================
+    questionCsvInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const text = e.target.result;
+        loadQuestionsFromCsv(text);
+        alert("問題CSV（項目.csv）の読み込みが完了しました。");
+      };
+
+      reader.onerror = () => {
+        alert("問題CSV 読み込み中にエラーが発生しました。");
+      };
+
+      reader.readAsText(file, "UTF-8");
+    });
+
+    function loadQuestionsFromCsv(csvText) {
+      const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+
+      if (lines.length <= 1) {
+        alert("問題CSVにデータがありません。");
+        return;
+      }
+
+      const dataLines = lines.slice(1);
+      questions.length = 0;
+
+      for (const line of dataLines) {
+        const cols = line.split(/\t|,/); // タブ or カンマ両対応
+
+        const q = {
+          code: cols[0] || "",                    // question_code
+          rbcId: cols[1] ? Number(cols[1]) : null, // RBC（数値ID）
+          rbcName: cols[2] || "",                 // RBC名前
+          environment: cols[3] || "",             // 状況設定文
+          body: cols[4] || "",                    // body_statement
+          choices: [
+            cols[5] || "", // 選択肢1
+            cols[6] || "", // 選択肢2
+            cols[7] || "", // 選択肢3
+            cols[8] || "", // 選択肢4
+            cols[9] || "", // 選択肢5
+          ],
+          answer: cols[10] || "",                 // answer
+          comment: cols[11] || "",                // 解説
+        };
+
+        if (q.code && q.rbcName) {
+          questions.push(q);
+        }
+      }
+
+      console.log("問題件数:", questions.length);
+    }
+
+    // ============================
+    // 5) A-2 の結果テーブル描画
+    // ============================
+    function renderResults(list, keyword) {
+      if (list.length === 0) {
+        resultsDiv.innerHTML = `<p class="no-result">"${keyword}" に一致するRBCの問題は見つかりませんでした。</p>`;
+        resultCount.textContent = "";
+        return;
+      }
+
+      resultCount.textContent = `${list.length}件ヒットしました`;
+
+      const rows = list
+        .map((item) => {
+          return `
+            <tr>
+              <td>${item.id ?? ""}</td>
+              <td>${item.chapter}</td>
+              <td>${item.major}</td>
+              <td>${item.middle}</td>
+              <td>${item.rbcName}</td>
+
+              <td>${item.totalAll}</td>
+              <td>${item.totalAllRank ?? ""}</td>
+
+              <td>${item.totalKishu}</td>
+              <td>${item.totalKishuRank ?? ""}</td>
+
+              <td>${item.totalIppan}</td>
+              <td>${item.totalIppanRank ?? ""}</td>
+
+              <td>${item.totalJokyo}</td>
+              <td>${item.totalJokyoRank ?? ""}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      const tableHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>章</th>
+              <th>大項目</th>
+              <th>中項目</th>
+              <th>RBC(小項目）</th>
+              <th>過去10年すべて</th>
+              <th>同RBCrank</th>
+              <th>必修</th>
+              <th>必修rank</th>
+              <th>一般</th>
+              <th>一般rank</th>
+              <th>状況</th>
+              <th>状況rank</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+
+      resultsDiv.innerHTML = tableHtml;
+    }
+
+    // ============================
+    // 正答率CSV(正答率.csv) の読み込み
+    // ============================
+    statsCsvInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const text = e.target.result;
+        loadQuestionStatsFromCsv(text);
+        alert("正答率CSV（正答率.csv）の読み込みが完了しました。");
+      };
+
+      reader.onerror = () => {
+        alert("正答率CSV 読み込み中にエラーが発生しました。");
+      };
+
+      reader.readAsText(file, "UTF-8");
+    });
+
+    function loadQuestionStatsFromCsv(csvText) {
+      const lines = csvText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line !== "");
+
+      if (lines.length <= 1) {
+        alert("正答率CSVにデータがありません。");
+        return;
+      }
+
+      const dataLines = lines.slice(1);
+      questionStats.length = 0;
+
+      for (const line of dataLines) {
+        const cols = line.split(/\t|,/); // タブ or カンマ両対応
+
+        const s = {
+          code: cols[0] || "",                    // question_code
+          rate: cols[1] ? Number(cols[1]) : null, // 正答率
+          choiceRates: [
+            cols[2] ? Number(cols[2]) : null,     // 選択率1
+            cols[3] ? Number(cols[3]) : null,     // 選択率2
+            cols[4] ? Number(cols[4]) : null,     // 選択率3
+            cols[5] ? Number(cols[5]) : null,     // 選択率4
+            cols[6] ? Number(cols[6]) : null,     // 選択率5
+          ],
+          discrimination: cols[7] ? Number(cols[7]) : null, // 識別値
+          over70Flag: cols[8] || "",                        // 70%以上のフラグ
+        };
+
+        if (s.code) {
+          questionStats.push(s);
+        }
+      }
+
+      console.log("正答率件数:", questionStats.length);
+    }
+
+    // ============================
+    // A-2: 指定RBCの問題一覧を描画（項目.csvベース）
+    // ============================
+    function renderQuestionList(list, keyword) {
+      if (!list.length) {
+        resultsDiv.innerHTML = `<p class="no-result">"${keyword}" に対応する問題は見つかりませんでした。</p>`;
+        resultCount.textContent = "";
+        return;
+      }
+
+      resultCount.textContent = `${list.length}件ヒットしました`;
+
+      const rows = list
+        .map((q) => {
+          const choicesHtml = q.choices
+            .map((text, idx) => {
+              if (!text) return "";
+              return `${idx + 1}. ${text}`;
+            })
+            .filter((s) => s !== "")
+            .join("<br />");
+
+          const stat = questionStats.find((s) => s.code === q.code) || null;
+          const rateText = stat && stat.rate != null ? `${stat.rate}%` : "";
+          const discrText =
+            stat && stat.discrimination != null ? `${stat.discrimination}` : "";
+
+          return `
+            <tr onclick="openQuestionDetail('${q.code}')">
+              <td>${q.code}</td>
+              <td>${q.environment || ""}</td>
+              <td>${q.body || ""}</td>
+              <td>${choicesHtml}</td>
+              <td>${rateText}</td>
+              <td>${discrText}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      const tableHtml = `
+        <table>
+          <thead>
+            <tr>
+              <th>問題番号</th>
+              <th>状況設定文</th>
+              <th>問題文</th>
+              <th>選択肢</th>
+              <th>正答率</th>
+              <th>識別値</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
+
+      resultsDiv.innerHTML = tableHtml;
+    }
+
+    // ============================
+    // A-3: 問題詳細画面へ遷移して描画
+    // ============================
+    function openQuestionDetail(code) {
+      currentQuestionCode = code;
+
+      const q = questions.find((item) => item.code === code);
+      if (!q) {
+        alert(`問題データが見つかりません（${code}）。`);
+        return;
+      }
+
+      // 編集フォームは新しい問題を開いたときには閉じておく
+      if (a3EditSection) {
+        a3EditSection.style.display = "none";
+      }
+
+      const stat = questionStats.find((s) => s.code === code) || null;
+
+      // 問題番号
+      a3Code.textContent = code;
+
+      // 問題文（HTMLタグを含む可能性があるので innerHTML を使う）
+      a3Body.innerHTML = q.body || "";
+
+      // 選択肢 + 選択率
+      const choiceRates = stat ? stat.choiceRates : [];
+      const itemsHtml = q.choices
+        .map((text, idx) => {
+          if (!text) return "";
+          const rate = choiceRates && choiceRates[idx] != null
+            ? `${choiceRates[idx]}%`
+            : "";
+          const rateText = rate ? `（${rate}）` : "";
+          return `<li>${idx + 1}. ${text}${rateText}</li>`;
+        })
+        .join("");
+
+      a3Choices.innerHTML = itemsHtml;
+
+      // 正答率
+      if (stat && stat.rate != null) {
+        a3Rate.textContent = `${stat.rate}%`;
+      } else {
+        a3Rate.textContent = "正答率データがありません。";
+      }
+
+      // 解説: <ex>〜</ex> を段落に変換して表示
+      let commentHtml = q.comment || "";
+      commentHtml = commentHtml.replace(/<ex>/g, "<p>").replace(/<\/ex>/g, "</p>");
+      a3Comment.innerHTML = commentHtml;
+
+      // 画面を A-3 に切り替え
+      showView("A3");
+    }
+  </script>
+</script>
+</body>
+</html>
