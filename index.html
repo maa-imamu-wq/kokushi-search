@@ -502,16 +502,19 @@
     }
 
     .image-tile {
-      border: 1px solid var(--border);
-      border-radius: 12px;
+      border: none;
+      border-radius: 0;
       overflow: hidden;
-      background: var(--card);
+      background: transparent;
     }
 
     .image-tile img {
       width: 100%;
       height: auto;
       display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
     }
 
     .image-tile a {
@@ -521,11 +524,7 @@
     }
 
     .image-caption {
-      padding: 8px 10px;
-      font-size: 0.85rem;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      background: var(--chip-bg);
+      display: none;
     }
 
     .image-empty {
@@ -896,7 +895,7 @@
       return ok;
     }
 
-    function buildQuestionImageCandidates(code, maxCount = 10) {
+    function buildQuestionImageCandidates(code, maxCount = 30) {
       const base = String(code || "").trim();
       if (!base) return [];
       const cands = [];
@@ -905,27 +904,52 @@
       }
       return cands;
     }
-
     async function renderQuestionImagesByCode(code) {
       if (!a3Images) return;
       a3Images.innerHTML = "";
 
-      const candidates = buildQuestionImageCandidates(code, 10);
-      const existing = await resolveAllExisting(candidates);
+      const candidates = buildQuestionImageCandidates(code, 30);
 
-      if (!existing.length) {
+      // Cloudflare Pagesでは fetch(HEAD/GET) だと 404 ページを拾ってしまうことがあるため、
+      // 実際に Image としてロードできたものだけを「存在する画像」とみなす。
+      const loadable = await (async () => {
+        const ok = [];
+
+        const tryLoad = (url) =>
+          new Promise((resolve) => {
+            const img = new Image();
+            img.decoding = "async";
+            img.onload = () => resolve(url);
+            img.onerror = () => resolve("");
+            // cache-bust（デプロイ直後のキャッシュに強くする）
+            const u = url.includes("?") ? `${url}&v=${Date.now()}` : `${url}?v=${Date.now()}`;
+            img.src = u;
+          });
+
+        // 逐次で十分（最大30枚）
+        for (const url of candidates) {
+          const hit = await tryLoad(url);
+          if (hit) {
+            // tryLoad で付けた ?v=... を外して表示用URLは素のパスにする
+            ok.push(url);
+          }
+        }
+
+        return ok;
+      })();
+
+      if (!loadable.length) {
         a3Images.innerHTML = `<div class="image-empty">参考画像はありません。</div>`;
         return;
       }
 
-      const tiles = existing
+      const tiles = loadable
         .map((url) => {
           const name = url.split("/").pop() || url;
           return `
             <div class="image-tile">
               <a href="${url}" target="_blank" rel="noopener">
-                <img src="${url}" alt="${name}" loading="lazy" />
-                <div class="image-caption">${name}</div>
+                <img class="qimg" src="${url}" alt="" loading="lazy" />
               </a>
             </div>
           `;
@@ -933,6 +957,18 @@
         .join("");
 
       a3Images.innerHTML = `<div class="section-title" style="margin:0 0 6px;">参考画像</div><div class="image-gallery">${tiles}</div>`;
+
+      // 念のため、表示後に壊れた画像が出た場合はタイルごと消す
+      Array.from(a3Images.querySelectorAll("img.qimg")).forEach((img) => {
+        img.addEventListener("error", () => {
+          const tile = img.closest(".image-tile");
+          if (tile) tile.remove();
+          const remain = a3Images.querySelectorAll("img.qimg").length;
+          if (remain === 0) {
+            a3Images.innerHTML = `<div class="image-empty">参考画像はありません。</div>`;
+          }
+        });
+      });
     }
     const a3Choices = document.getElementById("a3Choices");
     const a3Answer = document.getElementById("a3Answer");
