@@ -192,6 +192,12 @@
       display: none;
     }
 
+    /* A-4 は章をタブ（ボタン）で選ぶため、select は非表示（ロジック用に残す） */
+    label[for="a4ChapterSelect"],
+    #a4ChapterSelect {
+      display: none;
+    }
+
     button.primary,
     button.secondary {
       padding: 8px 16px;
@@ -330,6 +336,9 @@
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
+    }
+    .is-hidden {
+      display: none !important;
     }
 
     .summary-item {
@@ -597,7 +606,7 @@
           <!-- 中：サマリー -->
           <div class="card compact">
             <div class="section-title">サマリー</div>
-            <div id="a2Summary" class="summary-box" style="display:none;">
+            <div id="a2Summary" class="summary-box is-hidden">
               <div class="summary-item">
                 <div class="section-title">章</div>
                 <div class="summary-value" id="a2Chapter"></div>
@@ -737,13 +746,20 @@
         </div>
 
         <div class="card">
-          <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <div class="section-title">章</div>
+          <div id="a4ChapterTabs" class="tabs"></div>
+
+          <div style="height: 12px;"></div>
+
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:end;">
+            <!-- select は互換用に残す（CSSで非表示） -->
             <div style="flex:1 1 200px;">
               <label for="a4ChapterSelect">章</label>
               <select id="a4ChapterSelect">
                 <option value="">すべて</option>
               </select>
             </div>
+
             <div style="flex:1 1 200px;">
               <label for="a4BasisSelect">基準</label>
               <select id="a4BasisSelect">
@@ -755,6 +771,7 @@
               </select>
             </div>
           </div>
+
           <p class="subtitle" style="margin-top:8px;">
             ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
           </p>
@@ -1002,7 +1019,8 @@
     const rbcTabs = document.getElementById("rbcTabs");
     const rbcFilterInput = document.getElementById("rbcFilterInput");
     // A-4 ランキング用要素
-    const a4ChapterSelect = document.getElementById("a4ChapterSelect");
+    const a4ChapterTabs = document.getElementById("a4ChapterTabs");
+    const a4ChapterSelect = document.getElementById("a4ChapterSelect"); // 互換用（非表示）
     const a4BasisSelect = document.getElementById("a4BasisSelect");
     const a4RankingTable = document.getElementById("a4RankingTable");
     const a4RankingCount = document.getElementById("a4RankingCount");
@@ -1082,11 +1100,13 @@
           a2Jokyo.textContent = "";
         }
 
-        a2Summary.style.display = "block";
+        a2Summary.classList.remove("is-hidden");
       } else {
         // 問題自体が0件の場合
         a2Chapter.textContent = "";
         a2RbcName.textContent = "";
+        // タブ/検索入力で選んだRBC名は残す（0件でも分野が分かるように）
+        a2RbcName.textContent = keyword;
         if (a2Analysis) {
           a2Analysis.textContent = "この分野は過去10年の出題がありません";
         }
@@ -1095,7 +1115,7 @@
         a2Kishu.textContent = "0";
         a2Ippan.textContent = "0";
         a2Jokyo.textContent = "0";
-        a2Summary.style.display = "block";
+        a2Summary.classList.remove("is-hidden");
       }
 
       renderQuestionList(qs, keyword);
@@ -1114,7 +1134,7 @@
       rbcInput.value = "";
       resultCount.textContent = "";
       resultsDiv.innerHTML = "";
-      a2Summary.style.display = "none";
+      a2Summary.classList.add("is-hidden");
       rbcInput.focus();
     });
 
@@ -1603,36 +1623,81 @@
     // A-4: 章・基準のフィルタとランキング表
     // ============================
     function buildA4Filters() {
-      if (!a4ChapterSelect || !rbcItems.length) return;
+      if (!rbcItems.length) return;
 
-      // 章セレクトの中身を構築
+      // 章一覧
       const chapters = [...new Set(
         rbcItems
           .map((item) => item.chapter)
           .filter((ch) => ch && ch.trim() !== "")
       )].sort();
 
-      // 先頭は「すべて」
-      a4ChapterSelect.innerHTML =
-        '<option value="">すべて</option>' +
-        chapters.map((ch) => `<option value="${ch}">${ch}</option>`).join("");
+      // 互換用 select の中身も構築（非表示だが値同期に使う）
+      if (a4ChapterSelect) {
+        a4ChapterSelect.innerHTML =
+          '<option value="">すべて</option>' +
+          chapters.map((ch) => `<option value="${ch}">${ch}</option>`).join("");
+      }
+
+      // タブUIを構築
+      if (a4ChapterTabs) {
+        const tabsHtml = [
+          `<button class="tab-button" data-chapter="" aria-pressed="false">すべて</button>`,
+          ...chapters.map((ch) => `<button class="tab-button" data-chapter="${ch}" aria-pressed="false">${ch}</button>`),
+        ].join("");
+
+        a4ChapterTabs.innerHTML = tabsHtml;
+
+        // クリックイベント
+        Array.from(a4ChapterTabs.querySelectorAll("button")).forEach((btn) => {
+          btn.addEventListener("click", () => {
+            currentA4Chapter = btn.getAttribute("data-chapter") || "";
+
+            // active 表示
+            a4ChapterTabs
+              .querySelectorAll("button")
+              .forEach((b) => b.classList.remove("active"));
+            btn.classList.add("active");
+
+            // select と同期（念のため）
+            if (a4ChapterSelect) a4ChapterSelect.value = currentA4Chapter;
+
+            renderA4RankingTable();
+          });
+        });
+      }
 
       // 初期値
       currentA4Chapter = "";
       currentA4Basis = a4BasisSelect ? a4BasisSelect.value : "totalAll";
 
-      // イベント: 章変更
-      a4ChapterSelect.addEventListener("change", () => {
-        currentA4Chapter = a4ChapterSelect.value;
-        renderA4RankingTable();
-      });
+      // 互換用 select からの変更も拾う（将来のため）
+      if (a4ChapterSelect) {
+        a4ChapterSelect.addEventListener("change", () => {
+          currentA4Chapter = a4ChapterSelect.value;
+          // タブの active 同期
+          if (a4ChapterTabs) {
+            Array.from(a4ChapterTabs.querySelectorAll("button")).forEach((b) => {
+              const ch = b.getAttribute("data-chapter") || "";
+              b.classList.toggle("active", ch === currentA4Chapter);
+            });
+          }
+          renderA4RankingTable();
+        });
+      }
 
-      // イベント: 基準変更
+      // 基準変更
       if (a4BasisSelect) {
         a4BasisSelect.addEventListener("change", () => {
           currentA4Basis = a4BasisSelect.value;
           renderA4RankingTable();
         });
+      }
+
+      // タブUIの初期 active を「すべて」に
+      if (a4ChapterTabs) {
+        const first = a4ChapterTabs.querySelector('button[data-chapter=""]');
+        if (first) first.classList.add("active");
       }
 
       // 初回描画
