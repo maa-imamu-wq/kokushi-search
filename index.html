@@ -1031,7 +1031,7 @@
         (q) => q.rbcName && q.rbcName.toLowerCase().includes(lowerKeyword)
       );
 
-      // A-2 上部サマリーも questions ベースで表示
+      // A-2 上部サマリー表示
       if (qs.length > 0) {
         const qfirst = qs[0];
         a2Chapter.textContent = qfirst.chapter || "";
@@ -1048,7 +1048,7 @@
           a2Analysis.textContent = byId || byName || "（出題傾向データなし）";
         }
 
-        // 問題数（rbc_small.csv = rbcItems から取得）
+        // 問題数（rbc_small.csv を優先）
         const rbcMaster = rbcItems.find(
           (it) =>
             String(it.rbcName || "").trim() === String(qfirst.rbcName || "").trim() &&
@@ -1057,16 +1057,25 @@
           (it) => String(it.rbcName || "").trim() === String(qfirst.rbcName || "").trim()
         ) || null;
 
-        if (rbcMaster) {
-          // rbc_small の集計値を優先
-          a2TotalAll.textContent = String(rbcMaster.totalAll ?? qs.length);
+        const totalAll = rbcMaster ? (rbcMaster.totalAll ?? qs.length) : qs.length;
+
+        if (totalAll === 0) {
+          // 出題なしの場合の特別表示
+          a2Analysis.textContent = "この分野は過去10年の出題がありません";
+          a2TotalAll.textContent = "0";
+          a2TotalAllRank.textContent = "";
+          a2Kishu.textContent = "0";
+          a2Ippan.textContent = "0";
+          a2Jokyo.textContent = "0";
+        } else if (rbcMaster) {
+          a2TotalAll.textContent = String(rbcMaster.totalAll ?? totalAll);
           a2TotalAllRank.textContent = rbcMaster.totalAllRank != null ? String(rbcMaster.totalAllRank) : "";
-          a2Kishu.textContent = String(rbcMaster.totalKishu ?? "");
-          a2Ippan.textContent = String(rbcMaster.totalIppan ?? "");
-          a2Jokyo.textContent = String(rbcMaster.totalJokyo ?? "");
+          a2Kishu.textContent = String(rbcMaster.totalKishu ?? 0);
+          a2Ippan.textContent = String(rbcMaster.totalIppan ?? 0);
+          a2Jokyo.textContent = String(rbcMaster.totalJokyo ?? 0);
         } else {
-          // フォールバック（questions.csv からはカテゴリ別集計できないので合計のみ）
-          a2TotalAll.textContent = String(qs.length);
+          // フォールバック
+          a2TotalAll.textContent = String(totalAll);
           a2TotalAllRank.textContent = "";
           a2Kishu.textContent = "";
           a2Ippan.textContent = "";
@@ -1075,8 +1084,18 @@
 
         a2Summary.style.display = "block";
       } else {
-        if (a2Analysis) a2Analysis.textContent = "";
-        a2Summary.style.display = "none";
+        // 問題自体が0件の場合
+        a2Chapter.textContent = "";
+        a2RbcName.textContent = "";
+        if (a2Analysis) {
+          a2Analysis.textContent = "この分野は過去10年の出題がありません";
+        }
+        a2TotalAll.textContent = "0";
+        a2TotalAllRank.textContent = "";
+        a2Kishu.textContent = "0";
+        a2Ippan.textContent = "0";
+        a2Jokyo.textContent = "0";
+        a2Summary.style.display = "block";
       }
 
       renderQuestionList(qs, keyword);
