@@ -822,6 +822,15 @@
       if (currentViewLabel) {
         currentViewLabel.textContent = viewNameMap[name] || name;
       }
+
+      // A-3に遷移したときはページ先頭へ（スマホ/PC両対応）
+      if (name === "A3") {
+        // まずページ全体を上へ
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+        // 念のためメイン領域も先頭へ寄せる
+        const mainEl = document.querySelector("main.main");
+        if (mainEl) mainEl.scrollTop = 0;
+      }
     }
 
     // ナビボタンにも showView をつなぐ
