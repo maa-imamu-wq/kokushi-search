@@ -4,89 +4,186 @@
   <meta charset="UTF-8" />
   <title>国試分析</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-      max-width: 1000px;
-      margin: 24px auto;
-      padding: 0 16px;
-      line-height: 1.6;
-    }
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.25rem;
-    }
-    .subtitle {
-      color: #555;
-      margin-bottom: 1rem;
+    /* UI refresh: header/side nav/cards/table/accordion/toast */
+    :root {
+      --bg: #f6f2eb;
+      --card: #ffffff;
+      --text: #1c1b18;
+      --muted: #6f675c;
+      --primary: #1f6b5f;
+      --primary-strong: #175148;
+      --secondary: #ebe4da;
+      --border: #e3dbd0;
+      --chip-bg: #f7f2eb;
+      --sidebar: #efe7db;
+      --shadow: 0 8px 20px rgba(26, 22, 18, 0.08);
+      --radius: 14px;
     }
 
-    /* ナビゲーション（A-1〜A-4） */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", "Noto Sans JP", sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .app-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 1000;
+      box-shadow: 0 6px 14px rgba(26, 22, 18, 0.06);
+    }
+
+    .brand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .view-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      padding-top: 64px;
+    }
+
+    .sidebar {
+      width: 220px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      position: sticky;
+      top: 64px;
+      height: calc(100vh - 64px);
+      overflow-y: auto;
+    }
+
     .nav {
       display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+      flex-direction: column;
+      gap: 10px;
     }
+
     .nav button {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      background: var(--chip-bg);
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
+      text-align: left;
+      transition: all 0.2s ease;
     }
+
     .nav button.active {
-      background: #2563eb;
+      background: var(--primary);
       color: #fff;
-      border-color: #2563eb;
+      border-color: var(--primary);
+      box-shadow: 0 6px 12px rgba(31, 107, 95, 0.24);
     }
 
-    .tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-    .tab-button {
-      padding: 4px 8px;
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-    .tab-button.active {
-      background: #2563eb;
-      color: #fff;
-      border-color: #2563eb;
+    .main {
+      flex: 1;
+      padding: 24px 28px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
 
-    /* 画面コンテナ */
     .view {
       display: none;
     }
+
     .view.active {
       display: block;
     }
 
-    /* A-2 以降で使う共通パーツ */
-    .search-box {
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      padding: 16px;
+    .view-header {
       margin-bottom: 16px;
     }
+
+    .view-title {
+      font-size: 1.5rem;
+      margin: 0 0 6px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin: 0;
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card.compact {
+      padding: 12px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      margin: 0 0 6px;
+      color: var(--text);
+    }
+
+    .search-box {
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+
     label {
       display: block;
-      margin-bottom: 4px;
-      font-weight: bold;
+      margin-bottom: 6px;
+      font-weight: 600;
+      color: var(--text);
     }
-    input[type="text"] {
+
+    input[type="text"],
+    select,
+    textarea {
       width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+      font-family: inherit;
     }
+
+    textarea {
+      min-height: 120px;
+      box-sizing: border-box;
+    }
+
     /* A-2 の旧・RBC名検索欄はロジック用に残しつつ画面には表示しない */
     label[for="rbcInput"],
     #rbcInput,
@@ -94,266 +191,587 @@
     #clearButton {
       display: none;
     }
-    button.primary {
-      margin-top: 8px;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-      background-color: #2563eb;
-      color: white;
-    }
+
+    button.primary,
     button.secondary {
-      margin-top: 8px;
       padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
+      border-radius: 999px;
+      border: 1px solid transparent;
       cursor: pointer;
-      font-size: 1rem;
-      background-color: #e5e7eb;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: all 0.2s ease;
     }
+
+    button.primary {
+      background-color: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover {
+      background-color: var(--primary-strong);
+      border-color: var(--primary-strong);
+    }
+
+    button.secondary {
+      background-color: var(--secondary);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    button.secondary:hover {
+      background-color: #dfd5c8;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .tab-button {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--chip-bg);
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.2s ease;
+    }
+
+    .tab-button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
     .result-count {
       margin-top: 8px;
       font-size: 0.9rem;
-      color: #555;
+      color: var(--muted);
     }
+
+    .no-result {
+      margin-top: 12px;
+      color: #b42318;
+      font-size: 0.9rem;
+    }
+
+    #results,
+    #a4RankingTable {
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 12px;
       font-size: 0.9rem;
+      min-width: 720px;
     }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px 8px;
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
       text-align: left;
     }
+
     th {
-      background-color: #f3f4f6;
+      background-color: var(--chip-bg);
+      position: sticky;
+      top: 0;
+      z-index: 1;
     }
-    .no-result {
-      margin-top: 12px;
-      color: #b91c1c;
-      font-size: 0.9rem;
+
+    tr[onclick] {
+      cursor: pointer;
     }
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 4px;
-      margin-top: 8px;
+
+    tr[onclick]:hover {
+      background: #f0e9df;
     }
+
     #a3Body {
       margin-top: 4px;
     }
+
     #a3Comment p {
       margin: 4px 0;
     }
 
-    textarea {
+    .a2-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .a2-filters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .a2-filter-col {
+      min-width: 240px;
+    }
+
+    .a2-filter-col .tabs {
+      margin-bottom: 0;
+    }
+
+    .summary-box {
+      background: transparent;
+      border: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-item {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 2px 8px rgba(26, 22, 18, 0.04);
+    }
+
+    .summary-item .section-title {
+      margin-bottom: 4px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .summary-item .summary-value {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .summary-item.wide {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 900px) {
+      .summary-box {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .a3-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    #a3Code {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .a3-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .section-card {
+      padding: 16px;
+    }
+
+    .accordion-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 10px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .accordion-item summary {
+      list-style: none;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--chip-bg);
+    }
+
+    .accordion-item summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .accordion-item[open] summary {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .accordion-body {
+      padding: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: var(--text);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(8px);
+      transition: all 0.2s ease;
+      z-index: 1100;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (max-width: 900px) {
+      .app-shell {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 12px 16px;
+      }
+
+      .nav {
+        flex-direction: row;
+        overflow-x: auto;
+      }
+
+      .nav button {
+        white-space: nowrap;
+      }
+
+      .main {
+        padding: 16px;
+      }
+
+      .a2-filters {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #141311;
+        --card: #1f1d1a;
+        --text: #f2eee8;
+        --muted: #b5afa6;
+        --primary: #5ac4ad;
+        --primary-strong: #3aa68f;
+        --secondary: #2a261f;
+        --border: #332f28;
+        --chip-bg: #2a261f;
+        --sidebar: #1a1714;
+        --shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      }
+
+      input[type="text"],
+      select,
+      textarea {
+        background: #1f1d1a;
+        color: var(--text);
+      }
+
+      tr[onclick]:hover {
+        background: #2a261f;
+      }
+    }
+
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .image-tile {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--card);
+    }
+
+    .image-tile img {
       width: 100%;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 1rem;
-      font-family: inherit;
-      box-sizing: border-box;
+      height: auto;
+      display: block;
+    }
+
+    .image-tile a {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .image-caption {
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: var(--chip-bg);
+    }
+
+    .image-empty {
+      color: var(--muted);
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
-  <h1>国試分析</h1>
-  <p class="subtitle">国試分析画面</p>
+  <header class="app-header">
+    <div class="brand">国試分析</div>
+    <div id="currentViewLabel" class="view-label">A-1 ホーム</div>
+  </header>
 
-  <!-- A-1〜A-4 ナビゲーション -->
-  <div class="nav">
-    <button id="navA1" class="active">A-1 ホーム</button>
-    <button id="navA2">A-2 RBCから検索</button>
-    <button id="navA4">A-4 出題ランキングから検索</button>
-  </div>
-
-  <!-- A-1 ホーム画面 -->
-  <div id="viewA1" class="view active">
-    <p>国試のRBC別分析ツールです。</p>
-    <p class="section-title">メニュー</p>
-    <ul>
-      <li><button class="primary" onclick="showView('A2')">RBCから検索（A-2へ）</button></li>
-      <li><button class="secondary" onclick="showView('A4')">出題ランキングから検索（A-4へ）</button></li>
-    </ul>
-  </div>
-
-  <!-- A-2 RBCから検索画面 -->
-  <div id="viewA2" class="view">
-    <h2>国試分析画面 RBCから検索（A-2）</h2>
-
-    <!-- 章タブ / RBCタブ -->
-    <div id="chapterTabsContainer" style="margin-top: 8px;">
-      <div class="section-title">章</div>
-      <div id="chapterTabs" class="tabs"></div>
-    </div>
-
-    <div id="rbcTabsContainer" style="margin-top: 8px;">
-      <div class="section-title">RBC</div>
-      <div style="margin-bottom: 4px;">
-        <input
-          id="rbcFilterInput"
-          type="text"
-          placeholder="この章のRBCを絞り込み（例: 酸素, 上皮 など）"
-          style="width:100%; padding:6px 8px; border-radius:4px; border:1px solid #ccc; font-size:0.85rem;"
-        />
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="nav">
+        <button id="navA1" class="active">A-1 ホーム</button>
+        <button id="navA2">A-2 RBCから検索</button>
+        <button id="navA4">A-4 出題ランキングから検索</button>
       </div>
-      <div id="rbcTabs" class="tabs"></div>
-    </div>
+    </aside>
 
-    <!-- RBCの概要表示（章 / RBC / 合計〜問〜位 …） -->
-    <div id="a2Summary" style="margin: 12px 0; display:none;">
-      <div><span class="section-title">章</span> <span id="a2Chapter"></span></div>
-      <div><span class="section-title">RBC</span> <span id="a2RbcName"></span></div>
-      <div>
-        <span class="section-title">合計</span>
-        <span id="a2TotalAll"></span>問
-        （<span id="a2TotalAllRank"></span>位）
-      </div>
-      <div>
-        必修 <span id="a2Kishu"></span>問　
-        一般 <span id="a2Ippan"></span>問　
-        状況 <span id="a2Jokyo"></span>問
-      </div>
-    </div>
-
-    <!-- 🔍 検索エリア（いままで作ってきたもの） -->
-    <div class="search-box">
-      <label for="rbcInput">RBC名で検索</label>
-      <input id="rbcInput" type="text" placeholder="例: 細胞総論、上皮組織 など" />
-      <button id="searchButton" class="primary">検索</button>
-      <button id="clearButton" class="secondary">クリア</button>
-
-      <div style="margin-top: 12px;">
-        <label for="rbcCsvInput">RBCマスタCSV(rbc_small)を読み込む</label>
-        <input id="rbcCsvInput" type="file" accept=".csv,.tsv" />
-      </div>
-
-      <div style="margin-top: 12px;">
-        <label for="questionCsvInput">問題CSV(項目.csv)を読み込む</label>
-        <input id="questionCsvInput" type="file" accept=".csv,.tsv" />
-      </div>
-
-      <div style="margin-top: 12px;">
-        <label for="statsCsvInput">正答率CSV(正答率.csv)を読み込む</label>
-        <input id="statsCsvInput" type="file" accept=".csv,.tsv" />
-      </div>
-
-      <div id="resultCount" class="result-count"></div>
-    </div>
-
-    <!-- 📋 結果表示エリア -->
-    <div id="results"></div>
-  </div>
-
-  <!-- A-3 問題詳細画面 -->
-  <div id="viewA3" class="view">
-    <h2>国試分析画面 問題詳細（A-3）</h2>
-
-    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <div id="a3Code" style="font-size: 2rem; font-weight: bold;">問題番号</div>
-      <div>
-        <button id="a3EditToggleButton" class="primary" style="margin-right: 8px;">編集</button>
-        <button class="secondary" onclick="showView('A2')">前の検索へ（A-2に戻る）</button>
-      </div>
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <div class="section-title">問題文</div>
-      <div id="a3Body"></div>
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <div class="section-title">選択肢</div>
-      <ol id="a3Choices" style="padding-left: 1.5rem;"></ol>
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <div class="section-title">正答率</div>
-      <div id="a3Rate"></div>
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <div class="section-title">解説</div>
-      <div id="a3Comment"></div>
-    </div>
-
-    <div id="a3EditSection" style="margin-top: 16px; display:none;">
-      <div class="section-title">編集モード</div>
-
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditBody">問題文（編集）</label>
-        <textarea id="a3EditBody"></textarea>
-      </div>
-
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditChoice1">選択肢1</label>
-        <input id="a3EditChoice1" type="text" />
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditChoice2">選択肢2</label>
-        <input id="a3EditChoice2" type="text" />
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditChoice3">選択肢3</label>
-        <input id="a3EditChoice3" type="text" />
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditChoice4">選択肢4</label>
-        <input id="a3EditChoice4" type="text" />
-      </div>
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditChoice5">選択肢5</label>
-        <input id="a3EditChoice5" type="text" />
-      </div>
-
-      <div style="margin-bottom: 12px;">
-        <label for="a3EditComment">解説（編集）</label>
-        <textarea id="a3EditComment"></textarea>
-      </div>
-
-      <button id="a3SaveButton" class="primary">保存</button>
-      <button id="a3CancelButton" class="secondary">キャンセル</button>
-    </div>
-  </div>
-
-  <!-- A-4 出題ランキング画面 -->
-  <div id="viewA4" class="view">
-    <h2>国試分析画面 出題ランキングから検索（A-4）</h2>
-
-    <div class="search-box">
-      <div style="display:flex; gap:16px; flex-wrap:wrap;">
-        <div style="flex:1 1 200px;">
-          <label for="a4ChapterSelect">章</label>
-          <select id="a4ChapterSelect" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
-            <option value="">すべて</option>
-          </select>
+    <main class="main">
+      <!-- A-1 ホーム画面 -->
+      <div id="viewA1" class="view active">
+        <div class="card">
+          <h2 class="view-title">A-1 ホーム</h2>
+          <p class="subtitle">国試のRBC別分析ツールです。</p>
         </div>
-        <div style="flex:1 1 200px;">
-          <label for="a4BasisSelect">基準</label>
-          <select id="a4BasisSelect" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
-            <option value="totalAll">合計問題数</option>
-            <option value="totalKishu">必修問題数</option>
-            <option value="totalIppan">一般問題数</option>
-            <option value="totalJokyo">状況問題数</option>
-            <option value="totalOver70">正答率70%以上の問題数</option>
-          </select>
+        <div class="card">
+          <div class="section-title">メニュー</div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="primary" onclick="showView('A2')">RBCから検索（A-2へ）</button>
+            <button class="secondary" onclick="showView('A4')">出題ランキングから検索（A-4へ）</button>
+          </div>
         </div>
       </div>
-      <p class="subtitle" style="margin-top:8px; font-size:0.8rem;">
-        ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
-      </p>
-    </div>
 
-    <div id="a4RankingCount" class="result-count"></div>
+      <!-- A-2 RBCから検索画面 -->
+      <div id="viewA2" class="view">
+        <div class="view-header">
+          <h2 class="view-title">A-2 RBCから検索</h2>
+          <p class="subtitle">章とRBCを選んで対象問題を確認します。</p>
+        </div>
 
-    <div id="a4RankingTable"></div>
+        <div class="a2-grid">
+          <!-- 上：検索/フィルタ（横長） -->
+          <div class="card">
+            <div class="a2-filters">
+              <div class="a2-filter-col">
+                <div class="section-title">章</div>
+                <div id="chapterTabs" class="tabs"></div>
+              </div>
 
-    <button class="secondary" onclick="showView('A1')" style="margin-top:16px;">ホーム（A-1）に戻る</button>
+              <div class="a2-filter-col">
+                <div class="section-title">RBC</div>
+                <div style="margin-bottom: 8px;">
+                  <input
+                    id="rbcFilterInput"
+                    type="text"
+                    placeholder="この章のRBCを絞り込み（例: 酸素, 上皮 など）"
+                  />
+                </div>
+                <div id="rbcTabs" class="tabs"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 中：サマリー -->
+          <div class="card compact">
+            <div class="section-title">サマリー</div>
+            <div id="a2Summary" class="summary-box" style="display:none;">
+              <div class="summary-item">
+                <div class="section-title">章</div>
+                <div class="summary-value" id="a2Chapter"></div>
+              </div>
+
+              <div class="summary-item">
+                <div class="section-title">RBC</div>
+                <div class="summary-value" id="a2RbcName"></div>
+              </div>
+
+              <div class="summary-item wide">
+                <div class="section-title">出題傾向</div>
+                <div class="summary-value" id="a2Analysis" style="white-space: pre-wrap;"></div>
+              </div>
+
+              <div class="summary-item">
+                <div class="section-title">合計問題数</div>
+                <div class="summary-value">
+                  <span id="a2TotalAll"></span>問（<span id="a2TotalAllRank"></span>位）
+                </div>
+              </div>
+
+              <div class="summary-item">
+                <div class="section-title">内訳</div>
+                <div class="summary-value">
+                  必修 <span id="a2Kishu"></span>問<br />
+                  一般 <span id="a2Ippan"></span>問<br />
+                  状況 <span id="a2Jokyo"></span>問
+                </div>
+              </div>
+            </div>
+            </div>
+
+          <!-- 下：検索結果 -->
+          <div class="card">
+            <div class="section-title">検索結果</div>
+
+            <div class="search-box">
+              <label for="rbcInput">RBC名で検索</label>
+              <input id="rbcInput" type="text" placeholder="例: 細胞総論、上皮組織 など" />
+              <button id="searchButton" class="primary">検索</button>
+              <button id="clearButton" class="secondary">クリア</button>
+
+              <div id="resultCount" class="result-count"></div>
+            </div>
+
+            <div id="results"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- A-3 問題詳細画面 -->
+      <div id="viewA3" class="view">
+        <div class="view-header">
+          <h2 class="view-title">A-3 問題詳細</h2>
+          <p class="subtitle">問題の詳細と解説を確認します。</p>
+        </div>
+
+        <div class="card a3-header">
+          <div id="a3Code">問題番号</div>
+          <div class="a3-actions">
+            <button id="a3EditToggleButton" class="primary">編集</button>
+            <button class="secondary" onclick="showView('A2')">前の検索へ（A-2に戻る）</button>
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <div class="section-title">問題文</div>
+          <div id="a3Body"></div>
+          <div id="a3Images" style="margin-top: 12px;"></div>
+        </div>
+
+        <div class="card section-card">
+          <div class="section-title">選択肢</div>
+          <ol id="a3Choices" style="padding-left: 1.5rem;"></ol>
+        </div>
+
+        <div class="card section-card">
+          <div class="section-title">解答</div>
+          <div id="a3Answer"></div>
+        </div>
+
+        <div class="card section-card">
+          <div class="section-title">正答率</div>
+          <div id="a3Rate"></div>
+        </div>
+
+        <div class="card section-card">
+          <div class="section-title">解説</div>
+          <div id="a3Comment"></div>
+        </div>
+
+        <div id="a3EditSection" class="card" style="display:none;">
+          <div class="section-title">編集モード</div>
+
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditBody">問題文（編集）</label>
+            <textarea id="a3EditBody"></textarea>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditChoice1">選択肢1</label>
+            <input id="a3EditChoice1" type="text" />
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditChoice2">選択肢2</label>
+            <input id="a3EditChoice2" type="text" />
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditChoice3">選択肢3</label>
+            <input id="a3EditChoice3" type="text" />
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditChoice4">選択肢4</label>
+            <input id="a3EditChoice4" type="text" />
+          </div>
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditChoice5">選択肢5</label>
+            <input id="a3EditChoice5" type="text" />
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <label for="a3EditComment">解説（編集）</label>
+            <textarea id="a3EditComment"></textarea>
+          </div>
+
+          <button id="a3SaveButton" class="primary">保存</button>
+          <button id="a3CancelButton" class="secondary">キャンセル</button>
+        </div>
+      </div>
+
+      <!-- A-4 出題ランキング画面 -->
+      <div id="viewA4" class="view">
+        <div class="view-header">
+          <h2 class="view-title">A-4 出題ランキングから検索</h2>
+          <p class="subtitle">出題数が多いRBCをランキング表示します。</p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; gap:16px; flex-wrap:wrap;">
+            <div style="flex:1 1 200px;">
+              <label for="a4ChapterSelect">章</label>
+              <select id="a4ChapterSelect">
+                <option value="">すべて</option>
+              </select>
+            </div>
+            <div style="flex:1 1 200px;">
+              <label for="a4BasisSelect">基準</label>
+              <select id="a4BasisSelect">
+                <option value="totalAll">合計問題数</option>
+                <option value="totalKishu">必修問題数</option>
+                <option value="totalIppan">一般問題数</option>
+                <option value="totalJokyo">状況問題数</option>
+                <option value="totalOver70">正答率70%以上の問題数</option>
+              </select>
+            </div>
+          </div>
+          <p class="subtitle" style="margin-top:8px;">
+            ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
+          </p>
+        </div>
+
+        <div class="card compact">
+          <div id="a4RankingCount" class="result-count"></div>
+          <div id="a4RankingTable"></div>
+        </div>
+
+        <button class="secondary" onclick="showView('A1')">ホーム（A-1）に戻る</button>
+      </div>
+    </main>
   </div>
+
+  <div id="toast" class="toast" aria-live="polite"></div>
 
   <!-- 📦 JavaScript -->
   <script>
@@ -368,6 +786,25 @@
     const navA1 = document.getElementById("navA1");
     const navA2 = document.getElementById("navA2");
     const navA4 = document.getElementById("navA4");
+    const currentViewLabel = document.getElementById("currentViewLabel");
+    const viewNameMap = {
+      A1: "A-1 ホーム",
+      A2: "A-2 RBCから検索",
+      A3: "A-3 問題詳細",
+      A4: "A-4 出題ランキング",
+    };
+
+    const toast = document.getElementById("toast");
+    let toastTimer = null;
+    function showToast(message) {
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add("show");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 1800);
+    }
 
     function showView(name) {
       // view の表示/非表示
@@ -382,6 +819,10 @@
       if (name === "A1") navA1.classList.add("active");
       if (name === "A2") navA2.classList.add("active");
       if (name === "A4") navA4.classList.add("active");
+
+      if (currentViewLabel) {
+        currentViewLabel.textContent = viewNameMap[name] || name;
+      }
     }
 
     // ナビボタンにも showView をつなぐ
@@ -395,6 +836,17 @@
     const questions = []; // 項目.csv の問題データ
     const rbcItems = [];  // rbc_small.csv の内容
     const questionStats = []; // 正答率.csv のデータ
+    const explanations = []; // explanations.csv の内容
+    const rbcAnalyses = []; // rbc_analysis.csv の内容
+    const rbcAnalysisById = new Map();
+    const rbcAnalysisByName = new Map();
+
+    // ============================
+    // 1.5) 編集差分（patch）
+    // ============================
+    // key: question_code
+    // value: { body?, choices?, comment? }
+    let patch = {};
 
     // ============================
     // 2) HTML要素をつかむ（A-2）
@@ -404,15 +856,13 @@
     const clearButton = document.getElementById("clearButton");
     const resultsDiv = document.getElementById("results");
     const resultCount = document.getElementById("resultCount");
-    const rbcCsvInput = document.getElementById("rbcCsvInput");
-
-    const questionCsvInput = document.getElementById("questionCsvInput");
-    const statsCsvInput = document.getElementById("statsCsvInput");
+    // 手動CSV読み込みは廃止
 
     // A-2 サマリー部
     const a2Summary = document.getElementById("a2Summary");
     const a2Chapter = document.getElementById("a2Chapter");
     const a2RbcName = document.getElementById("a2RbcName");
+    const a2Analysis = document.getElementById("a2Analysis");
     const a2TotalAll = document.getElementById("a2TotalAll");
     const a2TotalAllRank = document.getElementById("a2TotalAllRank");
     const a2Kishu = document.getElementById("a2Kishu");
@@ -422,7 +872,70 @@
     // A-3 問題詳細部
     const a3Code = document.getElementById("a3Code");
     const a3Body = document.getElementById("a3Body");
+    const a3Images = document.getElementById("a3Images");
+    async function resolveAllExisting(urls) {
+      const list = Array.isArray(urls) ? urls.filter(Boolean) : [];
+      const ok = [];
+      for (const url of list) {
+        try {
+          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+          if (r.ok) {
+            ok.push(url);
+            continue;
+          }
+        } catch (e) {
+          // ignore
+        }
+        try {
+          const r2 = await fetch(url, { method: "GET", cache: "no-store" });
+          if (r2.ok) ok.push(url);
+        } catch (e2) {
+          // ignore
+        }
+      }
+      return ok;
+    }
+
+    function buildQuestionImageCandidates(code, maxCount = 10) {
+      const base = String(code || "").trim();
+      if (!base) return [];
+      const cands = [];
+      for (let i = 1; i <= maxCount; i++) {
+        cands.push(`data/images/${base}-${i}.png`);
+      }
+      return cands;
+    }
+
+    async function renderQuestionImagesByCode(code) {
+      if (!a3Images) return;
+      a3Images.innerHTML = "";
+
+      const candidates = buildQuestionImageCandidates(code, 10);
+      const existing = await resolveAllExisting(candidates);
+
+      if (!existing.length) {
+        a3Images.innerHTML = `<div class="image-empty">参考画像はありません。</div>`;
+        return;
+      }
+
+      const tiles = existing
+        .map((url) => {
+          const name = url.split("/").pop() || url;
+          return `
+            <div class="image-tile">
+              <a href="${url}" target="_blank" rel="noopener">
+                <img src="${url}" alt="${name}" loading="lazy" />
+                <div class="image-caption">${name}</div>
+              </a>
+            </div>
+          `;
+        })
+        .join("");
+
+      a3Images.innerHTML = `<div class="section-title" style="margin:0 0 6px;">参考画像</div><div class="image-gallery">${tiles}</div>`;
+    }
     const a3Choices = document.getElementById("a3Choices");
+    const a3Answer = document.getElementById("a3Answer");
     const a3Rate = document.getElementById("a3Rate");
     const a3Comment = document.getElementById("a3Comment");
 
@@ -478,13 +991,46 @@
         const qfirst = qs[0];
         a2Chapter.textContent = qfirst.chapter || "";
         a2RbcName.textContent = qfirst.rbcName || "";
-        a2TotalAll.textContent = qs.length;
-        a2TotalAllRank.textContent = "";
-        a2Kishu.textContent = "";
-        a2Ippan.textContent = "";
-        a2Jokyo.textContent = "";
+
+        // 出題傾向（rbc_analysis.csv）
+        if (a2Analysis) {
+          const byId = Number.isFinite(qfirst.rbcId)
+            ? rbcAnalysisById.get(qfirst.rbcId)
+            : null;
+          const byName = rbcAnalysisByName.get(
+            String(qfirst.rbcName || "").trim().toLowerCase()
+          );
+          a2Analysis.textContent = byId || byName || "（出題傾向データなし）";
+        }
+
+        // 問題数（rbc_small.csv = rbcItems から取得）
+        const rbcMaster = rbcItems.find(
+          (it) =>
+            String(it.rbcName || "").trim() === String(qfirst.rbcName || "").trim() &&
+            (!qfirst.chapter || String(it.chapter || "").trim() === String(qfirst.chapter || "").trim())
+        ) || rbcItems.find(
+          (it) => String(it.rbcName || "").trim() === String(qfirst.rbcName || "").trim()
+        ) || null;
+
+        if (rbcMaster) {
+          // rbc_small の集計値を優先
+          a2TotalAll.textContent = String(rbcMaster.totalAll ?? qs.length);
+          a2TotalAllRank.textContent = rbcMaster.totalAllRank != null ? String(rbcMaster.totalAllRank) : "";
+          a2Kishu.textContent = String(rbcMaster.totalKishu ?? "");
+          a2Ippan.textContent = String(rbcMaster.totalIppan ?? "");
+          a2Jokyo.textContent = String(rbcMaster.totalJokyo ?? "");
+        } else {
+          // フォールバック（questions.csv からはカテゴリ別集計できないので合計のみ）
+          a2TotalAll.textContent = String(qs.length);
+          a2TotalAllRank.textContent = "";
+          a2Kishu.textContent = "";
+          a2Ippan.textContent = "";
+          a2Jokyo.textContent = "";
+        }
+
         a2Summary.style.display = "block";
       } else {
+        if (a2Analysis) a2Analysis.textContent = "";
         a2Summary.style.display = "none";
       }
 
@@ -509,69 +1055,235 @@
     });
 
     // ============================
-    // 4) RBCマスタCSV の読み込み
+    // 3.4) CSV/TSV パーサ（引用符対応）
     // ============================
-    rbcCsvInput.addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
+    function detectDelimiter(text) {
+      // 先頭行だけ見て、タブが多ければTSV扱い
+      const firstLine = (text || "").split(/\r?\n/)[0] || "";
+      const tabCount = (firstLine.match(/\t/g) || []).length;
+      const commaCount = (firstLine.match(/,/g) || []).length;
+      return tabCount > commaCount ? "\t" : ",";
+    }
 
-      const reader = new FileReader();
+    function parseDelimitedText(text, delimiter) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
 
-      reader.onload = (e) => {
-        const text = e.target.result;
-        loadRbcItemsFromCsv(text);
-        alert("rbc_small の読み込みが完了しました。RBC名で検索できます。");
-      };
+      const d = delimiter;
+      const s = String(text || "");
 
-      reader.onerror = () => {
-        alert("rbc_small 読み込み中にエラーが発生しました。");
-      };
+      for (let i = 0; i < s.length; i++) {
+        const ch = s[i];
+        const next = s[i + 1];
 
-      reader.readAsText(file, "UTF-8");
+        if (inQuotes) {
+          if (ch === '"') {
+            // エスケープされたダブルクォート "" を " にする
+            if (next === '"') {
+              field += '"';
+              i++;
+            } else {
+              inQuotes = false;
+            }
+          } else {
+            field += ch;
+          }
+          continue;
+        }
+
+        if (ch === '"') {
+          inQuotes = true;
+          continue;
+        }
+
+        if (ch === d) {
+          row.push(field);
+          field = "";
+          continue;
+        }
+
+        if (ch === "\n") {
+          row.push(field);
+          field = "";
+          rows.push(row);
+          row = [];
+          continue;
+        }
+
+        if (ch === "\r") {
+          // \r\n の \r は捨てる
+          continue;
+        }
+
+        field += ch;
+      }
+
+      // last field
+      row.push(field);
+      // last row（末尾改行だけで空行になっている場合は除外）
+      const allEmpty = row.every((v) => String(v || "").trim() === "");
+      if (!allEmpty) rows.push(row);
+
+      return rows;
+    }
+
+    function parseTable(text) {
+      const delimiter = detectDelimiter(text);
+      const rows = parseDelimitedText(text, delimiter);
+      if (!rows.length) return { headers: [], rows: [] };
+      const headers = rows[0].map((h) => String(h || "").trim());
+      const bodyRows = rows.slice(1);
+      return { headers, rows: bodyRows };
+    }
+
+    // ============================
+    // 3.5) CSV自動読み込み
+    // ============================
+    async function fetchCsvText(path) {
+      const response = await fetch(path);
+      if (!response.ok) {
+        throw new Error(`CSV fetch failed: ${path}`);
+      }
+      return response.text();
+    }
+
+    async function loadAllCsvs() {
+      try {
+        const rbcText = await fetchCsvText("data/rbc_small.csv");
+        loadRbcItemsFromCsv(rbcText);
+
+        const rbcAnalysisText = await fetchCsvText("data/rbc_analysis.csv");
+        loadRbcAnalysisFromCsv(rbcAnalysisText);
+
+        const questionText = await fetchCsvText("data/questions.csv");
+        loadQuestionsFromCsv(questionText);
+
+        const statsText = await fetchCsvText("data/stats.csv");
+        loadQuestionStatsFromCsv(statsText);
+
+        const explanationsText = await fetchCsvText("data/explanations.csv");
+        loadExplanationsFromCsv(explanationsText);
+
+        console.log("all csv loaded");
+      } catch (error) {
+        console.error(error);
+        alert("CSVの自動読み込みに失敗しました。");
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadAllCsvs();
     });
 
-    function loadRbcItemsFromCsv(csvText) {
-      const lines = csvText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line !== "");
+    // ============================
+    // 4) RBCマスタCSV の読み込み
+    // ============================
 
-      if (lines.length <= 1) {
+    function loadRbcItemsFromCsv(csvText) {
+      const table = parseTable(csvText);
+      const headers = table.headers;
+      const dataRows = table.rows;
+
+      if (!headers.length || !dataRows.length) {
         alert("CSVにデータがありません。");
         return;
       }
 
-      const dataLines = lines.slice(1);
+      const normalizeHeader = (value) => {
+        return String(value || "")
+          .replace(/^\uFEFF/, "") // remove BOM
+          .replace(/\u3000/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      };
+
+      const headerIndexMap = {};
+      headers.forEach((h, idx) => {
+        const normalized = normalizeHeader(h);
+        if (!normalized) return;
+        if (headerIndexMap[normalized] == null) {
+          headerIndexMap[normalized] = idx;
+        }
+      });
+      console.log("rbc_small headers:", headers.map((h) => normalizeHeader(h)));
+
+      const findHeaderIndex = (candidates) => {
+        for (const name of candidates) {
+          const normalized = normalizeHeader(name);
+          if (headerIndexMap[normalized] != null) {
+            return headerIndexMap[normalized];
+          }
+        }
+        return null;
+      };
+
+      const idx = {
+        id: findHeaderIndex(["q_rbc_small_id", "rbc_id", "id"]),
+        chapter: findHeaderIndex(["章", "chapter", "Chapter"]),
+        major: findHeaderIndex(["大項目", "major"]),
+        middle: findHeaderIndex(["中項目", "middle"]),
+        rbcName: findHeaderIndex(["小項目", "rbc_name", "rbcName", "RBC"]),
+        order: findHeaderIndex(["表示順", "display_order", "order"]),
+        valid: findHeaderIndex(["有効", "valid"]),
+        master: findHeaderIndex(["master", "マスター"]),
+        totalAll: findHeaderIndex(["過去10年すべて", "totalAll"]),
+        totalAllRank: findHeaderIndex(["過去10年すべて同RBCrank", "totalAllRank"]),
+        totalKishu: findHeaderIndex(["過去10年必修", "totalKishu"]),
+        totalKishuRank: findHeaderIndex(["過去10年必修同RBCrank", "totalKishuRank"]),
+        totalIppan: findHeaderIndex(["過去10年一般", "totalIppan"]),
+        totalIppanRank: findHeaderIndex(["過去10年一般同RBCrank", "totalIppanRank"]),
+        totalJokyo: findHeaderIndex(["過去10年状況", "totalJokyo", "0"]),
+        totalJokyoRank: findHeaderIndex(["過去10年状況同RBCrank", "totalJokyoRank"]),
+        totalOver70: findHeaderIndex(["過去10年70%以上", "totalOver70", "過去10年70%以上の問題数"]),
+        totalOver70Rank: findHeaderIndex(["過去10年70%以上同RBCrank", "totalOver70Rank"]),
+      };
+
+      const getValue = (cols, index) => {
+        if (index == null) return "";
+        return cols[index] != null ? String(cols[index]) : "";
+      };
+
+      const numberOrZero = (value) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : 0;
+      };
+
+      const numberOrNull = (value) => {
+        const num = Number(value);
+        return Number.isFinite(num) ? num : null;
+      };
+
       rbcItems.length = 0;
 
-      for (const line of dataLines) {
-        const cols = line.split(/\t|,/); // タブ or カンマ両対応
-
+      for (const cols of dataRows) {
+        const rbcName = getValue(cols, idx.rbcName);
         const item = {
-          id: Number(cols[0]) || null,
-          chapter: cols[1] || "",
-          major: cols[2] || "",
-          middle: cols[3] || "",
-          rbcName: cols[4] || "",
+          id: numberOrNull(getValue(cols, idx.id)),
+          chapter: getValue(cols, idx.chapter).trim(),
+          major: getValue(cols, idx.major),
+          middle: getValue(cols, idx.middle),
+          rbcName: (rbcName || "").trim(),
 
-          order: Number(cols[5]) || null,
-          valid: cols[6] === "1",
-          master: cols[7] === "1",
+          order: numberOrNull(getValue(cols, idx.order)),
+          valid: getValue(cols, idx.valid).trim() === "1",
+          master: getValue(cols, idx.master).trim() === "1",
 
-          totalAll: Number(cols[8]) || 0,
-          totalAllRank: Number(cols[9]) || null,
+          totalAll: numberOrZero(getValue(cols, idx.totalAll)),
+          totalAllRank: numberOrNull(getValue(cols, idx.totalAllRank)),
 
-          totalKishu: Number(cols[10]) || 0,
-          totalKishuRank: Number(cols[11]) || null,
+          totalKishu: numberOrZero(getValue(cols, idx.totalKishu)),
+          totalKishuRank: numberOrNull(getValue(cols, idx.totalKishuRank)),
 
-          totalIppan: Number(cols[12]) || 0,
-          totalIppanRank: Number(cols[13]) || null,
+          totalIppan: numberOrZero(getValue(cols, idx.totalIppan)),
+          totalIppanRank: numberOrNull(getValue(cols, idx.totalIppanRank)),
 
-          totalJokyo: Number(cols[14]) || 0,
-          totalJokyoRank: Number(cols[15]) || null,
+          totalJokyo: numberOrZero(getValue(cols, idx.totalJokyo)),
+          totalJokyoRank: numberOrNull(getValue(cols, idx.totalJokyoRank)),
 
-          totalOver70: Number(cols[16]) || 0,
-          totalOver70Rank: Number(cols[17]) || null,
+          totalOver70: numberOrZero(getValue(cols, idx.totalOver70)),
+          totalOver70Rank: numberOrNull(getValue(cols, idx.totalOver70Rank)),
         };
 
         if (item.rbcName) {
@@ -579,9 +1291,131 @@
         }
       }
 
+      if (!rbcItems.length) {
+        console.warn("No RBC rows loaded. Check rbc_small.csv header names / delimiter.");
+      } else if (![...new Set(rbcItems.map((x) => (x.chapter || "").trim()).filter(Boolean))].length) {
+        console.warn("RBC loaded but chapter column is empty. Check 'chapter' header mapping.");
+      }
       console.log("RBC件数:", rbcItems.length);
       buildChapterTabs();
       buildA4Filters();
+    }
+
+    function loadRbcAnalysisFromCsv(csvText) {
+      const table = parseTable(csvText);
+      const headers = table.headers;
+      const dataRows = table.rows;
+
+      if (!headers.length || !dataRows.length) {
+        console.warn("rbc_analysis.csv にデータがありません。");
+        return;
+      }
+
+      const normalizeHeader = (value) => {
+        return String(value || "")
+          .replace(/\u3000/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      };
+
+      const headerIndexMap = {};
+      headers.forEach((h, idx) => {
+        const normalized = normalizeHeader(h);
+        if (!normalized) return;
+        if (headerIndexMap[normalized] == null) {
+          headerIndexMap[normalized] = idx;
+        }
+      });
+
+      const findHeaderIndex = (candidates) => {
+        for (const name of candidates) {
+          const normalized = normalizeHeader(name);
+          if (headerIndexMap[normalized] != null) {
+            return headerIndexMap[normalized];
+          }
+        }
+        return null;
+      };
+
+      const idxId = findHeaderIndex(["rbc_id", "rbcId", "id"]);
+      const idxName = findHeaderIndex(["rbc_name", "rbcName", "RBC", "rbc"]);
+      const idxAnalysis = findHeaderIndex(["analysis", "出題傾向"]);
+
+      const normalizeName = (value) => String(value || "").trim().toLowerCase();
+
+      rbcAnalyses.length = 0;
+      rbcAnalysisById.clear();
+      rbcAnalysisByName.clear();
+
+      for (const cols of dataRows) {
+        const rbcIdRaw = idxId != null ? cols[idxId] : "";
+        const rbcNameRaw = idxName != null ? cols[idxName] : "";
+        const analysisRaw = idxAnalysis != null ? cols[idxAnalysis] : "";
+
+        const rbcId = Number(rbcIdRaw);
+        const rbcName = String(rbcNameRaw || "").trim();
+        const analysis = String(analysisRaw || "");
+
+        const row = { rbcId, rbcName, analysis };
+        rbcAnalyses.push(row);
+
+        if (Number.isFinite(rbcId) && !rbcAnalysisById.has(rbcId)) {
+          rbcAnalysisById.set(rbcId, analysis);
+        }
+
+        const nameKey = normalizeName(rbcName);
+        if (nameKey && !rbcAnalysisByName.has(nameKey)) {
+          rbcAnalysisByName.set(nameKey, analysis);
+        }
+      }
+    }
+
+    function loadExplanationsFromCsv(csvText) {
+      const table = parseTable(csvText);
+      const headers = table.headers;
+      const dataRows = table.rows;
+
+      if (!headers.length || !dataRows.length) {
+        alert("解説CSVにデータがありません。");
+        return;
+      }
+
+      // question_code 列を優先
+      const headerIndexMap = {};
+      headers.forEach((h, idx) => {
+        if (h && headerIndexMap[h] == null) headerIndexMap[h] = idx;
+      });
+
+      const codeKeyCandidates = ["question_code", "code", "questionCode"];
+      const codeKey = codeKeyCandidates.find((k) => headerIndexMap[k] != null) || headers[0];
+
+      explanations.length = 0;
+
+      for (const cols of dataRows) {
+        const row = {};
+        headers.forEach((h, idx) => {
+          if (!h) return;
+          row[h] = cols[idx] != null ? String(cols[idx]) : "";
+        });
+
+        const code = (row[codeKey] || "").trim();
+        if (code) {
+          row[codeKey] = code;
+          explanations.push(row);
+        }
+      }
+
+      console.log("解説件数:", explanations.length);
+
+      const exMap = new Map(explanations.map((row) => [String(row[codeKey] || "").trim(), row]));
+
+      // questions へ join
+      for (const q of questions) {
+        const ex = exMap.get(String(q.code || "").trim());
+        if (ex) {
+          q.explanation = { ...ex };
+        }
+      }
     }
 
     // ============================
@@ -860,6 +1694,7 @@
     if (a3CancelButton) {
       a3CancelButton.addEventListener("click", () => {
         a3EditSection.style.display = "none";
+        showToast("編集をキャンセルしました。");
       });
     }
 
@@ -874,7 +1709,7 @@
           alert(`問題データが見つかりません（${currentQuestionCode}）。`);
           return;
         }
-        // 入力値で questions 配列内のデータを更新
+        // 入力値で questions 配列内のデータを更新（表示用）
         q.body = a3EditBody.value || "";
         q.choices[0] = a3EditChoice1.value || "";
         q.choices[1] = a3EditChoice2.value || "";
@@ -883,66 +1718,55 @@
         q.choices[4] = a3EditChoice5.value || "";
         q.comment = a3EditComment.value || "";
 
+        // === 差分（patch）として保存 ===
+        patch[currentQuestionCode] = {
+          body: q.body,
+          choices: q.choices.slice(), // 配列コピー
+          comment: q.comment,
+        };
+
+        // 開発中確認用
+        console.log("patch updated:", patch);
+
         // 編集フォームを閉じて再描画
         a3EditSection.style.display = "none";
         openQuestionDetail(currentQuestionCode);
+        showToast("保存しました。");
       });
     }
 
     // ============================
     // 問題CSV(項目.csv) の読み込み
     // ============================
-    questionCsvInput.addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        const text = e.target.result;
-        loadQuestionsFromCsv(text);
-        alert("問題CSV（項目.csv）の読み込みが完了しました。");
-      };
-
-      reader.onerror = () => {
-        alert("問題CSV 読み込み中にエラーが発生しました。");
-      };
-
-      reader.readAsText(file, "UTF-8");
-    });
 
     function loadQuestionsFromCsv(csvText) {
-      const lines = csvText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line !== "");
+      const table = parseTable(csvText);
+      const headers = table.headers;
+      const dataRows = table.rows;
 
-      if (lines.length <= 1) {
+      if (!headers.length || !dataRows.length) {
         alert("問題CSVにデータがありません。");
         return;
       }
 
-      const dataLines = lines.slice(1);
       questions.length = 0;
 
-      for (const line of dataLines) {
-        const cols = line.split(/\t|,/); // タブ or カンマ両対応
-
+      for (const cols of dataRows) {
         const q = {
-          code: cols[0] || "",                    // question_code
-          rbcId: cols[1] ? Number(cols[1]) : null, // RBC（数値ID）
-          rbcName: cols[2] || "",                 // RBC名前
-          environment: cols[3] || "",             // 状況設定文
-          body: cols[4] || "",                    // body_statement
+          code: (cols[0] || "").trim(),
+          rbcId: cols[1] ? Number(cols[1]) : null,
+          rbcName: cols[2] || "",
+          environment: cols[3] || "",
+          body: cols[4] || "",
           choices: [
-            cols[5] || "", // 選択肢1
-            cols[6] || "", // 選択肢2
-            cols[7] || "", // 選択肢3
-            cols[8] || "", // 選択肢4
-            cols[9] || "", // 選択肢5
+            cols[5] || "",
+            cols[6] || "",
+            cols[7] || "",
+            cols[8] || "",
+            cols[9] || "",
           ],
-          answer: cols[10] || "",                 // answer
-          comment: cols[11] || "",                // 解説
+          answer: cols[10] || "",
+          comment: cols[11] || "",
         };
 
         if (q.code && q.rbcName) {
@@ -1022,54 +1846,32 @@
     // ============================
     // 正答率CSV(正答率.csv) の読み込み
     // ============================
-    statsCsvInput.addEventListener("change", (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-
-      reader.onload = (e) => {
-        const text = e.target.result;
-        loadQuestionStatsFromCsv(text);
-        alert("正答率CSV（正答率.csv）の読み込みが完了しました。");
-      };
-
-      reader.onerror = () => {
-        alert("正答率CSV 読み込み中にエラーが発生しました。");
-      };
-
-      reader.readAsText(file, "UTF-8");
-    });
 
     function loadQuestionStatsFromCsv(csvText) {
-      const lines = csvText
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line !== "");
+      const table = parseTable(csvText);
+      const headers = table.headers;
+      const dataRows = table.rows;
 
-      if (lines.length <= 1) {
+      if (!headers.length || !dataRows.length) {
         alert("正答率CSVにデータがありません。");
         return;
       }
 
-      const dataLines = lines.slice(1);
       questionStats.length = 0;
 
-      for (const line of dataLines) {
-        const cols = line.split(/\t|,/); // タブ or カンマ両対応
-
+      for (const cols of dataRows) {
         const s = {
-          code: cols[0] || "",                    // question_code
-          rate: cols[1] ? Number(cols[1]) : null, // 正答率
+          code: (cols[0] || "").trim(),
+          rate: cols[1] !== "" && cols[1] != null ? Number(cols[1]) : null,
           choiceRates: [
-            cols[2] ? Number(cols[2]) : null,     // 選択率1
-            cols[3] ? Number(cols[3]) : null,     // 選択率2
-            cols[4] ? Number(cols[4]) : null,     // 選択率3
-            cols[5] ? Number(cols[5]) : null,     // 選択率4
-            cols[6] ? Number(cols[6]) : null,     // 選択率5
+            cols[2] !== "" && cols[2] != null ? Number(cols[2]) : null,
+            cols[3] !== "" && cols[3] != null ? Number(cols[3]) : null,
+            cols[4] !== "" && cols[4] != null ? Number(cols[4]) : null,
+            cols[5] !== "" && cols[5] != null ? Number(cols[5]) : null,
+            cols[6] !== "" && cols[6] != null ? Number(cols[6]) : null,
           ],
-          discrimination: cols[7] ? Number(cols[7]) : null, // 識別値
-          over70Flag: cols[8] || "",                        // 70%以上のフラグ
+          discrimination: cols[7] !== "" && cols[7] != null ? Number(cols[7]) : null,
+          over70Flag: cols[8] || "",
         };
 
         if (s.code) {
@@ -1094,18 +1896,22 @@
 
       const rows = list
         .map((q) => {
+          const stat = questionStats.find((s) => s.code === q.code) || null;
+          const choiceRates = stat ? stat.choiceRates : [];
+
           const choicesHtml = q.choices
             .map((text, idx) => {
               if (!text) return "";
-              return `${idx + 1}. ${text}`;
+              const cleanedText = String(text).replace(/^\s*(?:[0-9０-９]+[\.．、)]\s*)+/u, "");
+              const cr = choiceRates && choiceRates[idx] != null ? `${choiceRates[idx]}%` : "";
+              const crText = cr ? `（${cr}）` : "";
+              return `${idx + 1}. ${cleanedText}${crText}`;
             })
             .filter((s) => s !== "")
             .join("<br />");
 
-          const stat = questionStats.find((s) => s.code === q.code) || null;
           const rateText = stat && stat.rate != null ? `${stat.rate}%` : "";
-          const discrText =
-            stat && stat.discrimination != null ? `${stat.discrimination}` : "";
+          const discrText = stat && stat.discrimination != null ? `${stat.discrimination}` : "";
 
           return `
             <tr onclick="openQuestionDetail('${q.code}')">
@@ -1165,21 +1971,30 @@
 
       // 問題文（HTMLタグを含む可能性があるので innerHTML を使う）
       a3Body.innerHTML = q.body || "";
+      renderQuestionImagesByCode(code);
 
       // 選択肢 + 選択率
       const choiceRates = stat ? stat.choiceRates : [];
       const itemsHtml = q.choices
         .map((text, idx) => {
           if (!text) return "";
+          const cleanedText = String(text).replace(/^\s*(?:[0-9０-９]+[\.．、)]\s*)+/u, "");
           const rate = choiceRates && choiceRates[idx] != null
             ? `${choiceRates[idx]}%`
             : "";
           const rateText = rate ? `（${rate}）` : "";
-          return `<li>${idx + 1}. ${text}${rateText}</li>`;
+          return `<li>${cleanedText}${rateText}</li>`;
         })
         .join("");
 
       a3Choices.innerHTML = itemsHtml;
+
+      // 解答
+      if (q.answer) {
+        a3Answer.textContent = q.answer;
+      } else {
+        a3Answer.textContent = "解答データがありません。";
+      }
 
       // 正答率
       if (stat && stat.rate != null) {
@@ -1189,14 +2004,280 @@
       }
 
       // 解説: <ex>〜</ex> を段落に変換して表示
-      let commentHtml = q.comment || "";
-      commentHtml = commentHtml.replace(/<ex>/g, "<p>").replace(/<\/ex>/g, "</p>");
-      a3Comment.innerHTML = commentHtml;
+      const formatExText = (text) => {
+        if (!text) return "";
+        return text.replace(/<ex>/g, "<p>").replace(/<\/ex>/g, "</p>");
+      };
+
+      const ex = q.explanation || {};
+      const labelMap = {
+        comment: "解説",
+        editor_comment: "編集者向けの解説",
+        editor_coment: "編集者向けの解説", // CSV側の綴りミス吸収
+        clinical: "臨床的意義",
+        clinical_significance: "臨床的意義",
+        statsTrend: "選択率と偏差値の推移",
+        stats_trend: "選択率と偏差値の推移",
+        imageId: "画像",
+        image_id: "画像",
+        "画像": "画像",
+      };
+      const preferredOrder = [
+        "comment",
+        "editor_comment",
+        "editor_coment",
+        "clinical_significance",
+        "clinical",
+        "stats_trend",
+        "statsTrend",
+        "image_id",
+        "imageId",
+        "画像",
+      ];
+      const codeKeys = ["question_code", "code", "questionCode"];
+      // 画像関連ユーティリティ
+      const isImageKey = (key) => {
+        const k = String(key || "").trim();
+        if (!k) return false;
+        // 日本語
+        if (k === "画像" || k === "参考画像" || k.includes("画像")) return true;
+        // 英語系（image を含むキーは基本画像扱い）
+        const lower = k.toLowerCase();
+        if (lower.includes("image")) return true;
+        // 代表的なキー
+        if (lower === "image_id" || lower === "imageid" || lower === "image") return true;
+        if (lower === "reference_image" || lower === "referenceimage") return true;
+        // generic fallback
+        return /^image(_id)?$/i.test(k) || /_image(_id)?$/i.test(k);
+      };
+      const hasImageExt = (value) => /\.[a-z0-9]+$/i.test(value);
+      const sanitizeImageValue = (value) => {
+        // trim + remove surrounding quotes + normalize slashes
+        let v = String(value ?? "").trim();
+        // remove wrapping single/double quotes
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1).trim();
+        }
+        // some CSVs might accidentally include whitespace/newlines
+        v = v.replace(/\r?\n/g, "").trim();
+        // normalize Windows path separators
+        v = v.replace(/\\/g, "/");
+        return v;
+      };
+
+    // ============================
+    // 画像: png/jpg/jpeg 混在対応（onerror フォールバック）
+    // ============================
+    function buildImageCandidates(value) {
+      const v0 = sanitizeImageValue(value);
+      if (!v0) return [];
+
+      // URL / absolute / already-relative path
+      const isUrlLike = /^https?:\/\//i.test(v0) || v0.startsWith("/") || v0.startsWith("data/");
+
+      // helper: make src
+      const mk = (name) => {
+        if (!name) return "";
+        if (/^https?:\/\//i.test(name)) return name;
+        if (name.startsWith("/") || name.startsWith("data/")) return name;
+        return `data/images/${name}`;
+      };
+
+      const uniq = (arr) => {
+        const seen = new Set();
+        return arr.filter((x) => {
+          if (!x) return false;
+          const k = String(x);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      };
+
+      // PNG統一: base と base-1..base-4 だけ試す
+      const buildBaseVariants = (base) => {
+        const b = String(base || "").trim();
+        if (!b) return [];
+        const variants = [b];
+        // If already ends with -<digit>, don't add again
+        if (!/-\d+$/.test(b)) {
+          for (let i = 1; i <= 4; i++) variants.push(`${b}-${i}`);
+        }
+        return variants;
+      };
+
+      // 1) 拡張子付きで渡ってきても .png に寄せる
+      let base = v0;
+      if (/\.[A-Za-z0-9]+$/.test(base)) {
+        base = base.replace(/\.[A-Za-z0-9]+$/, "");
+      }
+
+      // URLっぽい場合はそのままも候補に残す（保険）
+      const candsRaw = [];
+      if (isUrlLike) candsRaw.push(mk(v0));
+
+      // 2) base / base-1..4 に .png を付けて候補化
+      const baseVariants = buildBaseVariants(base);
+      for (const bv of baseVariants) {
+        candsRaw.push(mk(`${bv}.png`));
+      }
+
+      return uniq(candsRaw);
+    }
+
+    async function resolveFirstExisting(urls) {
+      const list = Array.isArray(urls) ? urls.filter(Boolean) : [];
+      for (const url of list) {
+        try {
+          // Try HEAD first (fast). Some dev servers may not support it; we'll fallback.
+          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+          if (r.ok) return url;
+        } catch (e) {
+          // ignore
+        }
+        try {
+          // Fallback GET (may download, but ensures existence check)
+          const r2 = await fetch(url, { method: "GET", cache: "no-store" });
+          if (r2.ok) return url;
+        } catch (e2) {
+          // ignore
+        }
+      }
+      return "";
+    }
+
+    function attachImageFallback(imgEl, candidates) {
+      if (!imgEl) return;
+      const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+      imgEl.dataset.candidates = JSON.stringify(list);
+      imgEl.dataset.candIndex = "0";
+
+      const linkEl = document.getElementById(`link_${imgEl.id}`);
+      const linksEl = document.getElementById(`links_${imgEl.id}`);
+
+      // 候補リンク一覧は常に表示（存在しない場合でも確認用）
+      if (linksEl) {
+        linksEl.innerHTML = list
+          .map((url, idx) => {
+            const label = `候補${idx + 1}`;
+            return `<a href="${url}" target="_blank" rel="noopener">${label}</a>`;
+          })
+          .join(" ");
+      }
+
+      // メインリンクは「実在確認後」に表示する（404へ飛ばないように）
+      if (linkEl) {
+        linkEl.href = "#";
+        linkEl.style.display = "none";
+        linkEl.onclick = (ev) => {
+          ev.preventDefault();
+          const currentSrc = imgEl.currentSrc || imgEl.src;
+          if (currentSrc) {
+            window.open(currentSrc, "_blank", "noopener");
+          }
+        };
+      }
+
+      // onload 時にメインリンク更新
+      imgEl.onload = function () {
+        const currentSrc = this.currentSrc || this.src;
+        if (linkEl && currentSrc) {
+          linkEl.href = currentSrc;
+          linkEl.style.display = "inline-flex";
+        }
+      };
+
+      // onerror はフォールバック（ただし最初の src は preflight で決める）
+      imgEl.onerror = function () {
+        try {
+          const cands = JSON.parse(this.dataset.candidates || "[]");
+          const idx = Number(this.dataset.candIndex || "0");
+          const next = cands[idx + 1];
+          if (next) {
+            this.dataset.candIndex = String(idx + 1);
+            this.src = next;
+            return;
+          }
+        } catch (e) {
+          // noop
+        }
+        console.error("image load failed (no more candidates):", this.src);
+      };
+
+      // ===== preflight: first existing URL =====
+      (async () => {
+        if (!list.length) return;
+        const okUrl = await resolveFirstExisting(list);
+        if (okUrl) {
+          imgEl.src = okUrl;
+          const idx = list.indexOf(okUrl);
+          if (idx >= 0) imgEl.dataset.candIndex = String(idx);
+          if (linkEl) {
+            linkEl.href = okUrl;
+            linkEl.style.display = "inline-flex";
+          }
+        } else {
+          // none exists: keep link hidden, but keep candidate list visible
+          if (linkEl) {
+            linkEl.href = "#";
+            linkEl.style.display = "none";
+          }
+        }
+      })();
+    }
+
+      const allKeys = Object.keys(ex).filter((key) => !codeKeys.includes(key));
+      const orderedKeys = [
+        ...preferredOrder.filter((key) => allKeys.includes(key)),
+        ...allKeys
+          .filter((key) => !preferredOrder.includes(key))
+          .sort((a, b) => a.localeCompare(b)),
+      ];
+
+      const sectionsHtml = orderedKeys
+        .map((key) => {
+          const rawValue = ex[key];
+          const value = rawValue != null ? String(rawValue) : "";
+          if (!value.trim()) return "";
+          const title = labelMap[key] || key;
+
+          if (isImageKey(key)) {
+            const cands = buildImageCandidates(value.trim());
+            if (!cands.length) return "";
+            const imgId = `img_${code}_${key}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
+            // placeholder img を生成し、描画後に候補をセットしてフォールバック
+            setTimeout(() => {
+              const el = document.getElementById(imgId);
+              if (el) attachImageFallback(el, cands);
+            }, 0);
+
+            return `
+              <details class="accordion-item" open>
+                <summary>${title}</summary>
+                <div class="accordion-body">
+                  <a id="link_${imgId}" href="#" target="_blank" rel="noopener" style="display:inline-flex; gap:8px; align-items:center; margin-bottom:6px;">画像を新しいタブで開く</a>
+                  <span id="links_${imgId}" style="display:block; margin-bottom:8px; font-size:0.85rem; color: var(--muted);"></span>
+                  <img id="${imgId}" alt="解説画像" style="max-width:100%; height:auto;" />
+                </div>
+              </details>
+            `;
+          }
+
+          return `
+            <details class="accordion-item" open>
+              <summary>${title}</summary>
+              <div class="accordion-body">${formatExText(value)}</div>
+            </details>
+          `;
+        })
+        .filter((html) => html !== "")
+        .join("");
+
+      a3Comment.innerHTML = sectionsHtml;
 
       // 画面を A-3 に切り替え
       showView("A3");
     }
   </script>
-</script>
 </body>
 </html>
