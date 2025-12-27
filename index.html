@@ -1137,44 +1137,18 @@
     }
 
     function buildTrendImageCandidates(questionCode, explanation) {
-        // 要件: question_code と完全一致する画像だけを表示する。
-        // P/A は別問題なので変換しない。
-        const code = String(questionCode ?? "").trim();
-        if (!code) return [];
+      // 要件: question_code と完全一致する画像だけを表示する（P/Aは別問題なので変換しない）
+      const code = String(questionCode ?? "").trim();
+      if (!code) return [];
 
-        // まずは question_code そのもの
-        const bases = [code];
-
-        // 念のため explanations 側に同一コードが別キー名で入っている場合だけ拾う
-        if (explanation && typeof explanation === "object") {
-          ["question_code", "code", "questionCode"].forEach((k) => {
-            const v = String(explanation[k] ?? "").trim();
-            if (v && v === code) {
-              // 同一なら追加不要
-              return;
-            }
-            // ここで v を追加すると誤マッチが起きるので、完全一致要件を守り追加しない
-          });
-        }
-
-        const candidates = [];
-        const seen = new Set();
-        const push = (u) => {
-          if (!u || seen.has(u)) return;
-          seen.add(u);
-          candidates.push(u);
-        };
-
-        // data/images_rbc_analysis/<question_code>.png を3パターンで試す
-        bases.forEach((b) => {
-          const filename = `${b}.png`;
-          push(`data/images_rbc_analysis/${filename}`);
-          push(`./data/images_rbc_analysis/${filename}`);
-          push(`/data/images_rbc_analysis/${filename}`);
-        });
-
-        return candidates;
-      }
+      // Cloudflare Pages での相対パス差異に備えて3パターン用意（ただしファイル名は完全一致）
+      const filename = `${code}.png`;
+      return [
+        `data/images_rbc_analysis/${filename}`,
+        `./data/images_rbc_analysis/${filename}`,
+        `/data/images_rbc_analysis/${filename}`,
+      ];
+    }
     async function renderQuestionImagesByCode(code, explanation) {
       if (!a3Images) return;
       a3Images.innerHTML = "";
@@ -2558,35 +2532,40 @@
         cands = Array.isArray(cands) ? cands.filter(Boolean) : [];
         if (!cands.length) return;
 
-        const img = new Image();
-        img.decoding = "async";
-        img.loading = "lazy";
-        img.alt = "選択率と偏差値の推移";
+        // 画像ロード中も枠は確保（読み込み後に表示、無ければ消す）
+        holder.classList.remove("is-empty");
+        holder.innerHTML = "";
+
+        const imgEl = document.createElement("img");
+        imgEl.decoding = "async";
+        imgEl.loading = "lazy";
+        imgEl.alt = "選択率と偏差値の推移";
 
         let idx = 0;
         const setSrc = (url) => {
           const bust = `v=${Date.now()}`;
-          img.src = url.includes("?") ? `${url}&${bust}` : `${url}?${bust}`;
+          imgEl.src = url.includes("?") ? `${url}&${bust}` : `${url}?${bust}`;
         };
 
-        img.onload = () => {
+        imgEl.onload = () => {
+          // 正常に画像としてデコードできたときのみ表示
           holder.classList.remove("is-empty");
           holder.innerHTML = "";
-          holder.appendChild(img);
+          holder.appendChild(imgEl);
         };
 
-        img.onerror = () => {
+        imgEl.onerror = () => {
           idx += 1;
           if (idx < cands.length) {
             setSrc(cands[idx]);
             return;
           }
-          // 画像が無い場合は何も表示しない（要件どおり）
+          // 画像が無い（or デコードできない）場合は何も表示しない
           holder.classList.add("is-empty");
           holder.innerHTML = "";
         };
 
-        // try first candidate
+        // 最初の候補から順に試す
         setSrc(cands[idx]);
       });
 
