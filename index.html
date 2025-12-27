@@ -1136,22 +1136,17 @@
       return cands;
     }
 
-    function buildTrendImageCandidates(questionCode, explanation) {
+    function buildTrendImageCandidates(questionCode) {
       // 要件: question_code と完全一致する画像だけを表示する（P/Aは別問題なので変換しない）
       const code = String(questionCode ?? "").trim();
       if (!code) return [];
 
-      // 実ファイルは `data/images_rbc_analysis/<question_code>.png`
       const filename = `${code}.png`;
-
+      // まず最有力: data/images_rbc_analysis/<question_code>.png
       return [
         `data/images_rbc_analysis/${filename}`,
         `./data/images_rbc_analysis/${filename}`,
         `/data/images_rbc_analysis/${filename}`,
-        // 念のため、もし将来ルート直下へ移した場合も拾えるように
-        `images_rbc_analysis/${filename}`,
-        `./images_rbc_analysis/${filename}`,
-        `/images_rbc_analysis/${filename}`,
       ];
     }
     async function renderQuestionImagesByCode(code, explanation) {
@@ -2497,7 +2492,7 @@
           if (keyLower === "stats_trend" || keyLower === "statstrend" || title === "選択率と偏差値の推移") {
             // trend画像は data/images_rbc_analysis/<question_code>.png を最優先で探す
             // （例: 113A093.png のように question_code と完全一致するファイル名）
-            const trendCandidates = buildTrendImageCandidates(code, ex);
+            const trendCandidates = buildTrendImageCandidates(code);
             const rawCode = String(code || "").trim();
             const holderId = `trend_img_${rawCode}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
 
@@ -2507,7 +2502,7 @@
                 <div class="accordion-body">
                   <div class="a3-trend-wrap">
                     <div class="a3-trend-text">${formatExText(value)}</div>
-                    <div class="a3-trend-image is-empty" id="${holderId}" data-trend-cands='${JSON.stringify(trendCandidates)}'></div>
+                    <div class="a3-trend-image is-empty" id="${holderId}" data-trend-code="${rawCode}"></div>
                   </div>
                 </div>
               </details>
@@ -2527,18 +2522,13 @@
       a3Comment.innerHTML = sectionsHtml;
 
       // 「選択率と偏差値の推移」: 対応画像があれば横に表示（無ければ何も出さない）
-      Array.from(a3Comment.querySelectorAll("[data-trend-cands]")).forEach((holder) => {
-        let cands = [];
-        try {
-          cands = JSON.parse(holder.getAttribute("data-trend-cands") || "[]");
-        } catch (e) {
-          cands = [];
-        }
-        cands = Array.isArray(cands) ? cands.filter(Boolean) : [];
+      Array.from(a3Comment.querySelectorAll('[data-trend-code]')).forEach((holder) => {
+        const code = String(holder.getAttribute('data-trend-code') || '').trim();
+        if (!code) return;
+
+        const cands = buildTrendImageCandidates(code);
         if (!cands.length) return;
 
-        // 画像ロード中も枠は確保（読み込み後に表示、無ければ消す）
-        holder.classList.remove("is-empty");
         holder.innerHTML = "";
 
         const imgEl = document.createElement("img");
@@ -2553,7 +2543,6 @@
         };
 
         imgEl.onload = () => {
-          // 正常に画像としてデコードできたときのみ表示
           holder.classList.remove("is-empty");
           holder.innerHTML = "";
           holder.appendChild(imgEl);
@@ -2572,6 +2561,8 @@
 
         // 最初の候補から順に試す
         setSrc(cands[idx]);
+        // 読み込みが成功するまで非表示（余白を最小に）
+        holder.classList.add("is-empty");
       });
 
       // 画面を A-3 に切り替え
