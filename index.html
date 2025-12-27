@@ -1137,57 +1137,44 @@
     }
 
     function buildTrendImageCandidates(questionCode, explanation) {
-      const codes = [];
-      const pushCode = (v) => {
-        const s = String(v ?? "").trim();
-        if (!s) return;
-        if (!codes.includes(s)) codes.push(s);
-      };
+        // 要件: question_code と完全一致する画像だけを表示する。
+        // P/A は別問題なので変換しない。
+        const code = String(questionCode ?? "").trim();
+        if (!code) return [];
 
-      // Prefer the code used by the app, but also try explanation-side code keys
-      pushCode(questionCode);
-      if (explanation && typeof explanation === "object") {
-        ["question_code", "code", "questionCode", "id", "image_id"].forEach((k) => {
-          if (explanation[k] != null) pushCode(explanation[k]);
+        // まずは question_code そのもの
+        const bases = [code];
+
+        // 念のため explanations 側に同一コードが別キー名で入っている場合だけ拾う
+        if (explanation && typeof explanation === "object") {
+          ["question_code", "code", "questionCode"].forEach((k) => {
+            const v = String(explanation[k] ?? "").trim();
+            if (v && v === code) {
+              // 同一なら追加不要
+              return;
+            }
+            // ここで v を追加すると誤マッチが起きるので、完全一致要件を守り追加しない
+          });
+        }
+
+        const candidates = [];
+        const seen = new Set();
+        const push = (u) => {
+          if (!u || seen.has(u)) return;
+          seen.add(u);
+          candidates.push(u);
+        };
+
+        // data/images_rbc_analysis/<question_code>.png を3パターンで試す
+        bases.forEach((b) => {
+          const filename = `${b}.png`;
+          push(`data/images_rbc_analysis/${filename}`);
+          push(`./data/images_rbc_analysis/${filename}`);
+          push(`/data/images_rbc_analysis/${filename}`);
         });
+
+        return candidates;
       }
-
-      const candidates = [];
-      const seen = new Set();
-      const pushUnique = (u) => {
-        if (!u || seen.has(u)) return;
-        seen.add(u);
-        candidates.push(u);
-      };
-
-      const mk = (base) => {
-        const b = String(base || "").trim();
-        if (!b) return;
-
-        // Allow `113P116` and `113P116.png` etc.
-        const withExt = /\.[A-Za-z0-9]+$/.test(b) ? b : `${b}.png`;
-
-        // Common filename variants (case / separators)
-        const variants = [
-          withExt,
-          withExt.replace(/\.png$/i, ".PNG"),
-          withExt.replace(/\.png$/i, "_trend.png"),
-          withExt.replace(/\.png$/i, "-trend.png"),
-          withExt.replace(/\.png$/i, "_Trend.png"),
-          withExt.replace(/\.png$/i, "-Trend.png"),
-        ];
-
-        variants.forEach((file) => {
-          // Try relative, dot-relative, and absolute (Pages)
-          pushUnique(`data/images_rbc_analysis/${file}`);
-          pushUnique(`./data/images_rbc_analysis/${file}`);
-          pushUnique(`/data/images_rbc_analysis/${file}`);
-        });
-      };
-
-      codes.forEach(mk);
-      return candidates;
-    }
     async function renderQuestionImagesByCode(code, explanation) {
       if (!a3Images) return;
       a3Images.innerHTML = "";
@@ -2529,6 +2516,8 @@
           // 「選択率と偏差値の推移」には、対応画像（data/images_rbc_analysis/<code>.png）があれば横に表示
           const keyLower = String(key || "").trim().toLowerCase();
           if (keyLower === "stats_trend" || keyLower === "statstrend" || title === "選択率と偏差値の推移") {
+            // trend画像は data/images_rbc_analysis/<question_code>.png を最優先で探す
+            // （例: 113A093.png のように question_code と完全一致するファイル名）
             const trendCandidates = buildTrendImageCandidates(code, ex);
             const rawCode = String(code || "").trim();
             const holderId = `trend_img_${rawCode}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
