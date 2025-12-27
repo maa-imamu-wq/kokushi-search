@@ -1141,12 +1141,19 @@
       const code = String(questionCode ?? "").trim();
       if (!code) return [];
 
+      // 画像ファイル名は <question_code>.png を前提
       const filename = `${code}.png`;
-      // まず最有力: data/images_rbc_analysis/<question_code>.png
+
+      // デプロイ環境差分に強くするため候補を複数持つ
+      // - 期待: data/images_rbc_analysis/<code>.png
+      // - 念のため: ルート直下 images_rbc_analysis/<code>.png の可能性も試す
       return [
         `data/images_rbc_analysis/${filename}`,
         `./data/images_rbc_analysis/${filename}`,
         `/data/images_rbc_analysis/${filename}`,
+        `images_rbc_analysis/${filename}`,
+        `./images_rbc_analysis/${filename}`,
+        `/images_rbc_analysis/${filename}`,
       ];
     }
     async function renderQuestionImagesByCode(code, explanation) {
@@ -2549,18 +2556,22 @@
         };
 
         imgEl.onerror = () => {
+          const tried = cands[idx];
           idx += 1;
           if (idx < cands.length) {
             setSrc(cands[idx]);
             return;
           }
           // 画像が無い（or デコードできない）場合は何も表示しない
+          console.warn("trend image not found:", code, "last tried:", tried, "candidates:", cands);
           holder.classList.add("is-empty");
           holder.innerHTML = "";
         };
 
         // 最初の候補から順に試す
         setSrc(cands[idx]);
+        // デバッグ用（必要なら後で消してOK）
+        console.log("trend image try:", code, cands[0]);
         // 読み込みが成功するまで非表示（余白を最小に）
         holder.classList.add("is-empty");
       });
