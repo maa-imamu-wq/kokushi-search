@@ -1141,9 +1141,14 @@
       const code = String(questionCode ?? "").trim();
       if (!code) return [];
 
-      // Cloudflare Pages での相対パス差異に備えて3パターン用意（ただしファイル名は完全一致）
+      // 実ファイルは `data/images_rbc_analysis/<question_code>.png`
       const filename = `${code}.png`;
+
       return [
+        `data/images_rbc_analysis/${filename}`,
+        `./data/images_rbc_analysis/${filename}`,
+        `/data/images_rbc_analysis/${filename}`,
+        // 念のため、もし将来ルート直下へ移した場合も拾えるように
         `images_rbc_analysis/${filename}`,
         `./images_rbc_analysis/${filename}`,
         `/images_rbc_analysis/${filename}`,
