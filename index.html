@@ -1071,20 +1071,65 @@
       return ok;
     }
 
-    function buildQuestionImageCandidates(code, maxCount = 30) {
+    function buildQuestionImageCandidates(code, maxCount = 30, extraFilenames = []) {
       const base = String(code || "").trim();
       if (!base) return [];
       const cands = [];
+      const seen = new Set();
+      const pushUnique = (url) => {
+        if (!url || seen.has(url)) return;
+        seen.add(url);
+        cands.push(url);
+      };
+      const normalizeExtra = (value) => {
+        let v = String(value ?? "").trim();
+        if (!v) return "";
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1).trim();
+        }
+        v = v.replace(/\\/g, "/");
+        let path = v;
+        let suffix = "";
+        const qIndex = v.indexOf("?");
+        if (qIndex >= 0) {
+          path = v.slice(0, qIndex);
+          suffix = v.slice(qIndex);
+        }
+        if (!/\.[A-Za-z0-9]+$/.test(path)) {
+          path = `${path}.png`;
+        }
+        let full = `${path}${suffix}`;
+        if (!/^https?:\/\//i.test(full) && !full.startsWith("/") && !full.startsWith("data/")) {
+          full = `data/images/${full}`;
+        }
+        return full;
+      };
+
+      const extras = Array.isArray(extraFilenames) ? extraFilenames : [extraFilenames];
+      extras
+        .flatMap((item) => String(item ?? "").split(/[\s,;]+/).filter(Boolean))
+        .forEach((item) => {
+          pushUnique(normalizeExtra(item));
+        });
       for (let i = 1; i <= maxCount; i++) {
-        cands.push(`data/images/${base}-${i}.png`);
+        pushUnique(`data/images/${base}-${i}.png`);
       }
       return cands;
     }
-    async function renderQuestionImagesByCode(code) {
+    async function renderQuestionImagesByCode(code, explanation) {
       if (!a3Images) return;
       a3Images.innerHTML = "";
 
-      const candidates = buildQuestionImageCandidates(code, 30);
+      const extraNames = [];
+      if (explanation && typeof explanation === "object") {
+        const extraKeys = ["image_id", "imageId", "imageid", "画像"];
+        extraKeys.forEach((key) => {
+          if (explanation[key] != null) {
+            extraNames.push(String(explanation[key]));
+          }
+        });
+      }
+      const candidates = buildQuestionImageCandidates(code, 30, extraNames);
 
       // Cloudflare Pagesでは fetch(HEAD/GET) だと 404 ページを拾ってしまうことがあるため、
       // 実際に Image としてロードできたものだけを「存在する画像」とみなす。
@@ -2273,7 +2318,7 @@
 
       // 問題文（HTMLタグを含む可能性があるので innerHTML を使う）
       a3Body.innerHTML = q.body || "";
-      renderQuestionImagesByCode(code);
+      renderQuestionImagesByCode(code, q.explanation);
 
       // 選択肢 + 選択率
       const choiceRates = stat ? stat.choiceRates : [];
@@ -2332,7 +2377,31 @@
       ];
       const codeKeys = ["question_code", "code", "questionCode"];
 
-      const allKeys = Object.keys(ex).filter((key) => !codeKeys.includes(key));
+      // 「画像」セクション（旧UIの候補リンク/壊れ画像を出す領域）は使わないので除外
+      const imageKeys = [
+        "image",
+        "image_id",
+        "imageid",
+        "images",
+        "img",
+        "imgs",
+        "picture",
+        "pictures",
+        "photo",
+        "photos",
+        "画像",
+      ];
+
+      const allKeys = Object.keys(ex).filter((key) => {
+        if (codeKeys.includes(key)) return false;
+        const k = String(key || "").trim().toLowerCase();
+        if (imageKeys.includes(k)) return false;
+        if (k === "image_id" || k === "imageid") return false;
+        if (k.includes("image") || k.includes("img") || k.includes("picture") || k.includes("photo")) return false;
+        // 日本語キー対策
+        if (String(key || "").trim() === "画像") return false;
+        return true;
+      });
       const orderedKeys = [
         ...preferredOrder.filter((key) => allKeys.includes(key)),
         ...allKeys
@@ -2353,6 +2422,7 @@
             const rawCode = String(code || "").trim();
             const trendCandidates = [
               `data/images_rbc_analysis/${rawCode}.png`,
+              `./data/images_rbc_analysis/${rawCode}.png`,
               `/data/images_rbc_analysis/${rawCode}.png`,
             ];
             const holderId = `trend_img_${rawCode}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
