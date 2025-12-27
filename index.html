@@ -1144,15 +1144,11 @@
       // 画像ファイル名は <question_code>.png を前提
       const filename = `${code}.png`;
 
-      // デプロイ環境差分に強くするため候補を複数持つ
-      // - 期待: data/images_rbc_analysis/<code>.png
-      // - 念のため: ルート直下 images_rbc_analysis/<code>.png の可能性も試す
+      // Pages の配信パス揺れに備えて候補を複数持つが、最優先は data/images_rbc_analysis
       return [
         `data/images_rbc_analysis/${filename}`,
-        `./data/images_rbc_analysis/${filename}`,
         `/data/images_rbc_analysis/${filename}`,
         `images_rbc_analysis/${filename}`,
-        `./images_rbc_analysis/${filename}`,
         `/images_rbc_analysis/${filename}`,
       ];
     }
@@ -2529,11 +2525,12 @@
       a3Comment.innerHTML = sectionsHtml;
 
       // 「選択率と偏差値の推移」: 対応画像があれば横に表示（無ければ何も出さない）
+      // 重要: 画像リクエストが必ず発火するよう、img を先にDOMへ追加してから src を設定する
       Array.from(a3Comment.querySelectorAll('[data-trend-code]')).forEach((holder) => {
-        const code = String(holder.getAttribute('data-trend-code') || '').trim();
-        if (!code) return;
+        const qcode = String(holder.getAttribute('data-trend-code') || '').trim();
+        if (!qcode) return;
 
-        const cands = buildTrendImageCandidates(code);
+        const cands = buildTrendImageCandidates(qcode);
         if (!cands.length) return;
 
         holder.innerHTML = "";
@@ -2542,17 +2539,22 @@
         imgEl.decoding = "async";
         imgEl.loading = "lazy";
         imgEl.alt = "選択率と偏差値の推移";
+        // 先にDOMへ入れる（ネットワークリクエストを確実に発火させる）
+        holder.appendChild(imgEl);
+
+        // いったん非表示で開始（成功したら表示）
+        holder.classList.add("is-empty");
 
         let idx = 0;
         const setSrc = (url) => {
           const bust = `v=${Date.now()}`;
           imgEl.src = url.includes("?") ? `${url}&${bust}` : `${url}?${bust}`;
+          // デバッグ: Networkで `images_rbc_analysis` が見えるはず
+          console.log("trend image try:", qcode, imgEl.src);
         };
 
         imgEl.onload = () => {
           holder.classList.remove("is-empty");
-          holder.innerHTML = "";
-          holder.appendChild(imgEl);
         };
 
         imgEl.onerror = () => {
@@ -2563,17 +2565,13 @@
             return;
           }
           // 画像が無い（or デコードできない）場合は何も表示しない
-          console.warn("trend image not found:", code, "last tried:", tried, "candidates:", cands);
-          holder.classList.add("is-empty");
+          console.warn("trend image not found:", qcode, "last tried:", tried, "candidates:", cands);
           holder.innerHTML = "";
+          holder.classList.add("is-empty");
         };
 
         // 最初の候補から順に試す
         setSrc(cands[idx]);
-        // デバッグ用（必要なら後で消してOK）
-        console.log("trend image try:", code, cands[0]);
-        // 読み込みが成功するまで非表示（余白を最小に）
-        holder.classList.add("is-empty");
       });
 
       // 画面を A-3 に切り替え
