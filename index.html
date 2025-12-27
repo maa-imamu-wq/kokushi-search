@@ -192,36 +192,10 @@
       display: none;
     }
 
-    /* A-4 は章をタブ（ボタン）で選ぶ。select はロジック用に残しつつ画面には表示しない */
+    /* A-4 は章をタブ（ボタン）で選ぶため、select は非表示（ロジック用に残す） */
     label[for="a4ChapterSelect"],
-    #a4ChapterSelect,
-    label[for="a4BasisSelect"],
-    #a4BasisSelect {
+    #a4ChapterSelect {
       display: none;
-    }
-
-    /* A-4: クリックで並べ替えできる見出し */
-    th.sortable {
-      cursor: pointer;
-      user-select: none;
-    }
-
-    th.sortable:hover {
-      background: #efe7db;
-    }
-
-    /* A-4: 選択中の基準列を薄くハイライト */
-    .a4-table .is-active-basis {
-      background: rgba(31, 107, 95, 0.10);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      th.sortable:hover {
-        background: #332f28;
-      }
-      .a4-table .is-active-basis {
-        background: rgba(90, 196, 173, 0.16);
-      }
     }
 
     button.primary,
@@ -600,6 +574,46 @@
       color: var(--muted);
       font-size: 0.9rem;
     }
+
+    /* A-3: 「選択率と偏差値の推移」内に画像を横並び表示 */
+    .a3-trend-wrap {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .a3-trend-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .a3-trend-image {
+      flex: 0 0 320px;
+      max-width: 320px;
+    }
+
+    .a3-trend-image img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .a3-trend-image.is-empty {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .a3-trend-wrap {
+        flex-direction: column;
+      }
+
+      .a3-trend-image {
+        flex: 1 1 auto;
+        max-width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -817,8 +831,8 @@
 
           <div style="height: 12px;"></div>
 
-          <!-- select は互換用に残す（CSSで非表示） -->
-          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:end;" class="is-hidden">
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:end;">
+            <!-- select は互換用に残す（CSSで非表示） -->
             <div style="flex:1 1 200px;">
               <label for="a4ChapterSelect">章</label>
               <select id="a4ChapterSelect">
@@ -838,6 +852,10 @@
               </select>
             </div>
           </div>
+
+          <p class="subtitle" style="margin-top:8px;">
+            ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
+          </p>
         </div>
 
         <div class="card compact">
@@ -1162,7 +1180,7 @@
     let currentRbcFilter = "";
     let currentQuestionCode = null;
     let currentA4Chapter = "";
-    let currentA4Basis = "totalScore";
+    let currentA4Basis = "totalAll";
 
     // ============================
     // 3) 検索ボタン（A-2）
@@ -1814,8 +1832,7 @@
 
       // 初期値
       currentA4Chapter = "";
-      currentA4Basis = "totalScore";
-      if (a4BasisSelect) a4BasisSelect.value = currentA4Basis;
+      currentA4Basis = a4BasisSelect ? a4BasisSelect.value : "totalScore";
 
       // 互換用 select からの変更も拾う（将来のため）
       if (a4ChapterSelect) {
@@ -1850,27 +1867,6 @@
       renderA4RankingTable();
     }
 
-    function setA4Basis(key) {
-      const allowed = new Set(["totalScore", "totalAll", "totalKishu", "totalIppan", "totalJokyo", "totalOver70"]);
-      const next = String(key || "").trim();
-      if (!allowed.has(next)) return;
-      currentA4Basis = next;
-      if (a4BasisSelect) a4BasisSelect.value = next; // keep compatibility
-      renderA4RankingTable();
-    }
-
-    function a4BasisLabel(key) {
-      switch (key) {
-        case "totalScore": return "合計点数";
-        case "totalAll": return "合計問題数";
-        case "totalKishu": return "必修問題数";
-        case "totalIppan": return "一般問題数";
-        case "totalJokyo": return "状況問題数";
-        case "totalOver70": return "正答率70%以上の問題数";
-        default: return "";
-      }
-    }
-
     function renderA4RankingTable() {
       if (!a4RankingTable) return;
 
@@ -1902,8 +1898,7 @@
       }
 
       if (a4RankingCount) {
-        const basisLabel = a4BasisLabel(key) || "";
-        a4RankingCount.textContent = `${list.length}件のRBCがあります（並べ替え：見出しをクリック / 現在：${basisLabel}）`;
+        a4RankingCount.textContent = `${list.length}件のRBCがあります`;
       }
 
       const rowsHtml = list
@@ -1925,17 +1920,17 @@
         .join("");
 
       const tableHtml = `
-        <table class="a4-table">
+        <table>
           <thead>
             <tr>
               <th>順位</th>
               <th>RBC</th>
-              <th class="sortable" data-basis="totalScore" title="クリックで合計点数を基準に並べ替え">合計点数</th>
-              <th class="sortable" data-basis="totalAll" title="クリックで合計問題数を基準に並べ替え">合計問題数</th>
-              <th class="sortable" data-basis="totalKishu" title="クリックで必修問題数を基準に並べ替え">必修問題数</th>
-              <th class="sortable" data-basis="totalIppan" title="クリックで一般問題数を基準に並べ替え">一般問題数</th>
-              <th class="sortable" data-basis="totalJokyo" title="クリックで状況問題数を基準に並べ替え">状況問題数</th>
-              <th class="sortable" data-basis="totalOver70" title="クリックで正答率70%以上の問題数を基準に並べ替え">正答率70%以上の問題数</th>
+              <th>合計点数</th>
+              <th>合計問題数</th>
+              <th>必修問題数</th>
+              <th>一般問題数</th>
+              <th>状況問題数</th>
+              <th>正答率70%以上の問題数</th>
             </tr>
           </thead>
           <tbody>
@@ -1945,27 +1940,6 @@
       `;
 
       a4RankingTable.innerHTML = tableHtml;
-
-      // クリックで基準変更
-      Array.from(a4RankingTable.querySelectorAll("th.sortable")).forEach((th) => {
-        th.addEventListener("click", () => {
-          const basis = th.getAttribute("data-basis") || "";
-          setA4Basis(basis);
-        });
-      });
-
-      // 選択中の基準列をハイライト
-      const activeKey = key;
-      const header = a4RankingTable.querySelector(`th.sortable[data-basis="${activeKey}"]`);
-      if (header) header.classList.add("is-active-basis");
-      const colIndex = header ? header.cellIndex : -1;
-      if (colIndex >= 0) {
-        const rows = a4RankingTable.querySelectorAll("table.a4-table tr");
-        rows.forEach((tr) => {
-          const cell = tr.children && tr.children[colIndex];
-          if (cell) cell.classList.add("is-active-basis");
-        });
-      }
     }
 
     // ============================
@@ -2346,6 +2320,9 @@
         clinical_significance: "臨床的意義",
         statsTrend: "選択率と偏差値の推移",
         stats_trend: "選択率と偏差値の推移",
+        imageId: "画像",
+        image_id: "画像",
+        "画像": "画像",
       };
       const preferredOrder = [
         "comment",
@@ -2355,6 +2332,9 @@
         "clinical",
         "stats_trend",
         "statsTrend",
+        "image_id",
+        "imageId",
+        "画像",
       ];
       const codeKeys = ["question_code", "code", "questionCode"];
       // 画像関連ユーティリティ
@@ -2372,6 +2352,180 @@
         // generic fallback
         return /^image(_id)?$/i.test(k) || /_image(_id)?$/i.test(k);
       };
+      const hasImageExt = (value) => /\.[a-z0-9]+$/i.test(value);
+      const sanitizeImageValue = (value) => {
+        // trim + remove surrounding quotes + normalize slashes
+        let v = String(value ?? "").trim();
+        // remove wrapping single/double quotes
+        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+          v = v.slice(1, -1).trim();
+        }
+        // some CSVs might accidentally include whitespace/newlines
+        v = v.replace(/\r?\n/g, "").trim();
+        v = v.replace(/\\/g, "/");
+        return v;
+      };
+
+    // ============================
+    // 画像: png/jpg/jpeg 混在対応（onerror フォールバック）
+    // ============================
+    function buildImageCandidates(value) {
+      const v0 = sanitizeImageValue(value);
+      if (!v0) return [];
+
+      // URL / absolute / already-relative path
+      const isUrlLike = /^https?:\/\//i.test(v0) || v0.startsWith("/") || v0.startsWith("data/");
+
+      // helper: make src
+      const mk = (name) => {
+        if (!name) return "";
+        if (/^https?:\/\//i.test(name)) return name;
+        if (name.startsWith("/") || name.startsWith("data/")) return name;
+        return `data/images/${name}`;
+      };
+
+      const uniq = (arr) => {
+        const seen = new Set();
+        return arr.filter((x) => {
+          if (!x) return false;
+          const k = String(x);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+      };
+
+      // PNG統一: base と base-1..base-4 だけ試す
+      const buildBaseVariants = (base) => {
+        const b = String(base || "").trim();
+        if (!b) return [];
+        const variants = [b];
+        // If already ends with -<digit>, don't add again
+        if (!/-\d+$/.test(b)) {
+          for (let i = 1; i <= 4; i++) variants.push(`${b}-${i}`);
+        }
+        return variants;
+      };
+
+      // 1) 拡張子付きで渡ってきても .png に寄せる
+      let base = v0;
+      if (/\.[A-Za-z0-9]+$/.test(base)) {
+        base = base.replace(/\.[A-Za-z0-9]+$/, "");
+      }
+
+      // URLっぽい場合はそのままも候補に残す（保険）
+      const candsRaw = [];
+      if (isUrlLike) candsRaw.push(mk(v0));
+
+      // 2) base / base-1..4 に .png を付けて候補化
+      const baseVariants = buildBaseVariants(base);
+      for (const bv of baseVariants) {
+        candsRaw.push(mk(`${bv}.png`));
+      }
+
+      return uniq(candsRaw);
+    }
+
+    async function resolveFirstExisting(urls) {
+      const list = Array.isArray(urls) ? urls.filter(Boolean) : [];
+      for (const url of list) {
+        try {
+          // Try HEAD first (fast). Some dev servers may not support it; we'll fallback.
+          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
+          if (r.ok) return url;
+        } catch (e) {
+          // ignore
+        }
+        try {
+          // Fallback GET (may download, but ensures existence check)
+          const r2 = await fetch(url, { method: "GET", cache: "no-store" });
+          if (r2.ok) return url;
+        } catch (e2) {
+          // ignore
+        }
+      }
+      return "";
+    }
+
+    function attachImageFallback(imgEl, candidates) {
+      if (!imgEl) return;
+      const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
+      imgEl.dataset.candidates = JSON.stringify(list);
+      imgEl.dataset.candIndex = "0";
+
+      const linkEl = document.getElementById(`link_${imgEl.id}`);
+      const linksEl = document.getElementById(`links_${imgEl.id}`);
+
+      // 候補リンク一覧は常に表示（存在しない場合でも確認用）
+      if (linksEl) {
+        linksEl.innerHTML = list
+          .map((url, idx) => {
+            const label = `候補${idx + 1}`;
+            return `<a href="${url}" target="_blank" rel="noopener">${label}</a>`;
+          })
+          .join(" ");
+      }
+
+      // メインリンクは「実在確認後」に表示する（404へ飛ばないように）
+      if (linkEl) {
+        linkEl.href = "#";
+        linkEl.style.display = "none";
+        linkEl.onclick = (ev) => {
+          ev.preventDefault();
+          const currentSrc = imgEl.currentSrc || imgEl.src;
+          if (currentSrc) {
+            window.open(currentSrc, "_blank", "noopener");
+          }
+        };
+      }
+
+      // onload 時にメインリンク更新
+      imgEl.onload = function () {
+        const currentSrc = this.currentSrc || this.src;
+        if (linkEl && currentSrc) {
+          linkEl.href = currentSrc;
+          linkEl.style.display = "inline-flex";
+        }
+      };
+
+      // onerror はフォールバック（ただし最初の src は preflight で決める）
+      imgEl.onerror = function () {
+        try {
+          const cands = JSON.parse(this.dataset.candidates || "[]");
+          const idx = Number(this.dataset.candIndex || "0");
+          const next = cands[idx + 1];
+          if (next) {
+            this.dataset.candIndex = String(idx + 1);
+            this.src = next;
+            return;
+          }
+        } catch (e) {
+          // noop
+        }
+        console.error("image load failed (no more candidates):", this.src);
+      };
+
+      // ===== preflight: first existing URL =====
+      (async () => {
+        if (!list.length) return;
+        const okUrl = await resolveFirstExisting(list);
+        if (okUrl) {
+          imgEl.src = okUrl;
+          const idx = list.indexOf(okUrl);
+          if (idx >= 0) imgEl.dataset.candIndex = String(idx);
+          if (linkEl) {
+            linkEl.href = okUrl;
+            linkEl.style.display = "inline-flex";
+          }
+        } else {
+          // none exists: keep link hidden, but keep candidate list visible
+          if (linkEl) {
+            linkEl.href = "#";
+            linkEl.style.display = "none";
+          }
+        }
+      })();
+    }
 
       const allKeys = Object.keys(ex).filter((key) => !codeKeys.includes(key));
       const orderedKeys = [
@@ -2389,7 +2543,45 @@
           const title = labelMap[key] || key;
 
           if (isImageKey(key)) {
-            return ""; // A-3末尾の「画像」欄は使わないので表示しない
+            const cands = buildImageCandidates(value.trim());
+            if (!cands.length) return "";
+            const imgId = `img_${code}_${key}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
+            // placeholder img を生成し、描画後に候補をセットしてフォールバック
+            setTimeout(() => {
+              const el = document.getElementById(imgId);
+              if (el) attachImageFallback(el, cands);
+            }, 0);
+
+            return `
+              <details class="accordion-item" open>
+                <summary>${title}</summary>
+                <div class="accordion-body">
+                  <a id="link_${imgId}" href="#" target="_blank" rel="noopener" style="display:inline-flex; gap:8px; align-items:center; margin-bottom:6px;">画像を新しいタブで開く</a>
+                  <span id="links_${imgId}" style="display:block; margin-bottom:8px; font-size:0.85rem; color: var(--muted);"></span>
+                  <img id="${imgId}" alt="解説画像" style="max-width:100%; height:auto;" />
+                </div>
+              </details>
+            `;
+          }
+
+          // 「選択率と偏差値の推移」には、対応画像（data/images_rbc_analysis/<code>.png）があれば横に表示
+          const keyLower = String(key || "").trim().toLowerCase();
+          if (keyLower === "stats_trend" || keyLower === "statstrend" || title === "選択率と偏差値の推移") {
+            const safeCode = encodeURIComponent(String(code || "").trim());
+            const trendImgUrl = `/data/images_rbc_analysis/${safeCode}.png`;
+            const holderId = `trend_img_${code}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
+
+            return `
+              <details class="accordion-item" open>
+                <summary>${title}</summary>
+                <div class="accordion-body">
+                  <div class="a3-trend-wrap">
+                    <div class="a3-trend-text">${formatExText(value)}</div>
+                    <div class="a3-trend-image is-empty" id="${holderId}" data-trend-src="${trendImgUrl}"></div>
+                  </div>
+                </div>
+              </details>
+            `;
           }
 
           return `
@@ -2403,6 +2595,33 @@
         .join("");
 
       a3Comment.innerHTML = sectionsHtml;
+
+      // 「選択率と偏差値の推移」: 対応画像があれば横に表示（無ければ何も出さない）
+      Array.from(a3Comment.querySelectorAll("[data-trend-src]")).forEach((holder) => {
+        const src = holder.getAttribute("data-trend-src") || "";
+        if (!src) return;
+
+        const img = new Image();
+        img.decoding = "async";
+        img.loading = "lazy";
+        img.alt = "選択率と偏差値の推移";
+
+        img.onload = () => {
+          holder.classList.remove("is-empty");
+          holder.innerHTML = "";
+          holder.appendChild(img);
+        };
+
+        img.onerror = () => {
+          // 画像が無い場合は何も表示しない（要件どおり）
+          holder.classList.add("is-empty");
+          holder.innerHTML = "";
+        };
+
+        // cache-bust（デプロイ直後の反映遅延対策）
+        const bust = `v=${Date.now()}`;
+        img.src = src.includes("?") ? `${src}&${bust}` : `${src}?${bust}`;
+      });
 
       // 画面を A-3 に切り替え
       showView("A3");
