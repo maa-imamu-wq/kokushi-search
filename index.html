@@ -192,10 +192,36 @@
       display: none;
     }
 
-    /* A-4 は章をタブ（ボタン）で選ぶため、select は非表示（ロジック用に残す） */
+    /* A-4 は章をタブ（ボタン）で選ぶ。select はロジック用に残しつつ画面には表示しない */
     label[for="a4ChapterSelect"],
-    #a4ChapterSelect {
+    #a4ChapterSelect,
+    label[for="a4BasisSelect"],
+    #a4BasisSelect {
       display: none;
+    }
+
+    /* A-4: クリックで並べ替えできる見出し */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th.sortable:hover {
+      background: #efe7db;
+    }
+
+    /* A-4: 選択中の基準列を薄くハイライト */
+    .a4-table .is-active-basis {
+      background: rgba(31, 107, 95, 0.10);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      th.sortable:hover {
+        background: #332f28;
+      }
+      .a4-table .is-active-basis {
+        background: rgba(90, 196, 173, 0.16);
+      }
     }
 
     button.primary,
@@ -390,6 +416,40 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    /* A-3: 選択肢/解答/正答率を1カードに統合 */
+    .a3-choice-box {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .a3-choice-left {
+      min-width: 0;
+    }
+
+    .a3-choice-right {
+      display: grid;
+      grid-template-rows: auto auto;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .a3-choice-right-top,
+    .a3-choice-right-bottom {
+      background: var(--chip-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      box-shadow: 0 2px 8px rgba(26, 22, 18, 0.04);
+    }
+
+    @media (max-width: 900px) {
+      .a3-choice-box {
+        grid-template-columns: 1fr;
+      }
     }
 
     .section-card {
@@ -680,18 +740,24 @@
         </div>
 
         <div class="card section-card">
-          <div class="section-title">選択肢</div>
-          <ol id="a3Choices" style="padding-left: 1.5rem;"></ol>
-        </div>
+          <div class="a3-choice-box">
+            <div class="a3-choice-left">
+              <div class="section-title">選択肢</div>
+              <ol id="a3Choices" style="padding-left: 1.5rem;"></ol>
+            </div>
 
-        <div class="card section-card">
-          <div class="section-title">解答</div>
-          <div id="a3Answer"></div>
-        </div>
+            <div class="a3-choice-right">
+              <div class="a3-choice-right-top">
+                <div class="section-title">解答</div>
+                <div id="a3Answer"></div>
+              </div>
 
-        <div class="card section-card">
-          <div class="section-title">正答率</div>
-          <div id="a3Rate"></div>
+              <div class="a3-choice-right-bottom">
+                <div class="section-title">正答率</div>
+                <div id="a3Rate"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card section-card">
@@ -751,8 +817,8 @@
 
           <div style="height: 12px;"></div>
 
-          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:end;">
-            <!-- select は互換用に残す（CSSで非表示） -->
+          <!-- select は互換用に残す（CSSで非表示） -->
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:end;" class="is-hidden">
             <div style="flex:1 1 200px;">
               <label for="a4ChapterSelect">章</label>
               <select id="a4ChapterSelect">
@@ -763,6 +829,7 @@
             <div style="flex:1 1 200px;">
               <label for="a4BasisSelect">基準</label>
               <select id="a4BasisSelect">
+                <option value="totalScore">合計点数</option>
                 <option value="totalAll">合計問題数</option>
                 <option value="totalKishu">必修問題数</option>
                 <option value="totalIppan">一般問題数</option>
@@ -771,10 +838,6 @@
               </select>
             </div>
           </div>
-
-          <p class="subtitle" style="margin-top:8px;">
-            ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
-          </p>
         </div>
 
         <div class="card compact">
@@ -872,6 +935,75 @@
     // key: question_code
     // value: { body?, choices?, comment? }
     let patch = {};
+
+    // ============================
+    // 1.6) D1(Pages Functions) から編集差分を取得/保存
+    // ============================
+    async function fetchPatchFromServer(code) {
+      const c = String(code || "").trim();
+      if (!c) return null;
+      try {
+        const res = await fetch(`/api/patch?code=${encodeURIComponent(c)}`, { cache: "no-store" });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data && data.patch ? data.patch : null;
+      } catch (e) {
+        console.warn("fetchPatchFromServer failed", e);
+        return null;
+      }
+    }
+
+    function mergePatchIntoQuestion(q, p) {
+      if (!q || !p) return;
+      if (typeof p.body === "string") q.body = p.body;
+      if (Array.isArray(p.choices)) {
+        const arr = p.choices.slice(0, 5);
+        while (arr.length < 5) arr.push("");
+        q.choices = arr;
+      }
+      if (typeof p.comment === "string") q.comment = p.comment;
+    }
+
+    async function applyPatchToQuestion(code) {
+      const c = String(code || "").trim();
+      if (!c) return;
+
+      // ローカルpatchがあれば即時反映
+      const local = patch[c];
+      const qLocal = questions.find((item) => item.code === c);
+      if (qLocal && local) mergePatchIntoQuestion(qLocal, local);
+
+      // サーバ（D1）から取得して最新を上書き
+      const serverPatch = await fetchPatchFromServer(c);
+      if (!serverPatch) return;
+
+      patch[c] = serverPatch; // ローカルにもキャッシュ
+      const q = questions.find((item) => item.code === c);
+      if (q) mergePatchIntoQuestion(q, serverPatch);
+    }
+
+    async function savePatchToServer(question_code, patchObj) {
+      const code = String(question_code || "").trim();
+      if (!code) throw new Error("missing question_code");
+      if (!patchObj || typeof patchObj !== "object") throw new Error("missing patch");
+
+      const res = await fetch("/api/patch", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          question_code: code,
+          actor: "", // いったん空でOK
+          source: "ui",
+          patch: patchObj,
+        }),
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`save failed: ${res.status} ${t}`);
+      }
+      return true;
+    }
 
     // ============================
     // 2) HTML要素をつかむ（A-2）
@@ -1030,7 +1162,7 @@
     let currentRbcFilter = "";
     let currentQuestionCode = null;
     let currentA4Chapter = "";
-    let currentA4Basis = "totalAll";
+    let currentA4Basis = "totalScore";
 
     // ============================
     // 3) 検索ボタン（A-2）
@@ -1622,6 +1754,19 @@
     // ============================
     // A-4: 章・基準のフィルタとランキング表
     // ============================
+    // ---- A-4 合計点数算出・基準値取得 ----
+    function calcTotalScore(item) {
+      const kishu = Number(item?.totalKishu || 0);
+      const ippan = Number(item?.totalIppan || 0);
+      const jokyo = Number(item?.totalJokyo || 0);
+      return kishu + ippan + (jokyo * 2);
+    }
+
+    function getA4Metric(item, key) {
+      if (key === "totalScore") return calcTotalScore(item);
+      return Number(item?.[key] || 0);
+    }
+
     function buildA4Filters() {
       if (!rbcItems.length) return;
 
@@ -1669,7 +1814,8 @@
 
       // 初期値
       currentA4Chapter = "";
-      currentA4Basis = a4BasisSelect ? a4BasisSelect.value : "totalAll";
+      currentA4Basis = "totalScore";
+      if (a4BasisSelect) a4BasisSelect.value = currentA4Basis;
 
       // 互換用 select からの変更も拾う（将来のため）
       if (a4ChapterSelect) {
@@ -1704,6 +1850,27 @@
       renderA4RankingTable();
     }
 
+    function setA4Basis(key) {
+      const allowed = new Set(["totalScore", "totalAll", "totalKishu", "totalIppan", "totalJokyo", "totalOver70"]);
+      const next = String(key || "").trim();
+      if (!allowed.has(next)) return;
+      currentA4Basis = next;
+      if (a4BasisSelect) a4BasisSelect.value = next; // keep compatibility
+      renderA4RankingTable();
+    }
+
+    function a4BasisLabel(key) {
+      switch (key) {
+        case "totalScore": return "合計点数";
+        case "totalAll": return "合計問題数";
+        case "totalKishu": return "必修問題数";
+        case "totalIppan": return "一般問題数";
+        case "totalJokyo": return "状況問題数";
+        case "totalOver70": return "正答率70%以上の問題数";
+        default: return "";
+      }
+    }
+
     function renderA4RankingTable() {
       if (!a4RankingTable) return;
 
@@ -1715,13 +1882,12 @@
       }
 
       // ソート用のスコアを決める
-      const key = currentA4Basis || "totalAll";
+      const key = currentA4Basis || "totalScore";
 
       list = list
-        .filter((item) => typeof item[key] === "number")
         .sort((a, b) => {
-          const av = a[key] || 0;
-          const bv = b[key] || 0;
+          const av = getA4Metric(a, key);
+          const bv = getA4Metric(b, key);
           if (bv !== av) return bv - av; // 降順
           // スコアが同じときはRBC名で昇順
           return (a.rbcName || "").localeCompare(b.rbcName || "");
@@ -1736,7 +1902,8 @@
       }
 
       if (a4RankingCount) {
-        a4RankingCount.textContent = `${list.length}件のRBCがあります`;
+        const basisLabel = a4BasisLabel(key) || "";
+        a4RankingCount.textContent = `${list.length}件のRBCがあります（並べ替え：見出しをクリック / 現在：${basisLabel}）`;
       }
 
       const rowsHtml = list
@@ -1746,7 +1913,7 @@
             <tr onclick="goToRbcFromA4('${item.rbcName}')" style="cursor:pointer;">
               <td>${rank}</td>
               <td>${item.rbcName}</td>
-              <td>${item.totalAll || 0}</td>
+              <td>${calcTotalScore(item) || 0}</td>
               <td>${item.totalAll || 0}</td>
               <td>${item.totalKishu || 0}</td>
               <td>${item.totalIppan || 0}</td>
@@ -1758,17 +1925,17 @@
         .join("");
 
       const tableHtml = `
-        <table>
+        <table class="a4-table">
           <thead>
             <tr>
               <th>順位</th>
               <th>RBC</th>
-              <th>合計点数</th>
-              <th>合計問題数</th>
-              <th>必修問題数</th>
-              <th>一般問題数</th>
-              <th>状況問題数</th>
-              <th>正答率70%以上の問題数</th>
+              <th class="sortable" data-basis="totalScore" title="クリックで合計点数を基準に並べ替え">合計点数</th>
+              <th class="sortable" data-basis="totalAll" title="クリックで合計問題数を基準に並べ替え">合計問題数</th>
+              <th class="sortable" data-basis="totalKishu" title="クリックで必修問題数を基準に並べ替え">必修問題数</th>
+              <th class="sortable" data-basis="totalIppan" title="クリックで一般問題数を基準に並べ替え">一般問題数</th>
+              <th class="sortable" data-basis="totalJokyo" title="クリックで状況問題数を基準に並べ替え">状況問題数</th>
+              <th class="sortable" data-basis="totalOver70" title="クリックで正答率70%以上の問題数を基準に並べ替え">正答率70%以上の問題数</th>
             </tr>
           </thead>
           <tbody>
@@ -1778,6 +1945,27 @@
       `;
 
       a4RankingTable.innerHTML = tableHtml;
+
+      // クリックで基準変更
+      Array.from(a4RankingTable.querySelectorAll("th.sortable")).forEach((th) => {
+        th.addEventListener("click", () => {
+          const basis = th.getAttribute("data-basis") || "";
+          setA4Basis(basis);
+        });
+      });
+
+      // 選択中の基準列をハイライト
+      const activeKey = key;
+      const header = a4RankingTable.querySelector(`th.sortable[data-basis="${activeKey}"]`);
+      if (header) header.classList.add("is-active-basis");
+      const colIndex = header ? header.cellIndex : -1;
+      if (colIndex >= 0) {
+        const rows = a4RankingTable.querySelectorAll("table.a4-table tr");
+        rows.forEach((tr) => {
+          const cell = tr.children && tr.children[colIndex];
+          if (cell) cell.classList.add("is-active-basis");
+        });
+      }
     }
 
     // ============================
@@ -1828,7 +2016,7 @@
     }
 
     if (a3SaveButton) {
-      a3SaveButton.addEventListener("click", () => {
+      a3SaveButton.addEventListener("click", async () => {
         if (!currentQuestionCode) {
           alert("編集する問題が選択されていません。");
           return;
@@ -1853,6 +2041,15 @@
           choices: q.choices.slice(), // 配列コピー
           comment: q.comment,
         };
+
+        // === D1へ保存（Pages Functions）===
+        try {
+          await savePatchToServer(currentQuestionCode, patch[currentQuestionCode]);
+        } catch (e) {
+          console.error(e);
+          showToast("保存に失敗しました（サーバ）");
+          // ローカル反映はできているので止めない
+        }
 
         // 開発中確認用
         console.log("patch updated:", patch);
@@ -2079,8 +2276,10 @@
     // ============================
     // A-3: 問題詳細画面へ遷移して描画
     // ============================
-    function openQuestionDetail(code) {
+    async function openQuestionDetail(code) {
       currentQuestionCode = code;
+      // D1に保存された編集差分を取り込み、表示に反映
+      await applyPatchToQuestion(code);
 
       const q = questions.find((item) => item.code === code);
       if (!q) {
@@ -2189,7 +2388,6 @@
         }
         // some CSVs might accidentally include whitespace/newlines
         v = v.replace(/\r?\n/g, "").trim();
-        // normalize Windows path separators
         v = v.replace(/\\/g, "/");
         return v;
       };
