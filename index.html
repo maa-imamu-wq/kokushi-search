@@ -1144,9 +1144,9 @@
       // Cloudflare Pages での相対パス差異に備えて3パターン用意（ただしファイル名は完全一致）
       const filename = `${code}.png`;
       return [
-        `data/images_rbc_analysis/${filename}`,
-        `./data/images_rbc_analysis/${filename}`,
-        `/data/images_rbc_analysis/${filename}`,
+        `images_rbc_analysis/${filename}`,
+        `./images_rbc_analysis/${filename}`,
+        `/images_rbc_analysis/${filename}`,
       ];
     }
     async function renderQuestionImagesByCode(code, explanation) {
