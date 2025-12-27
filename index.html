@@ -2346,9 +2346,6 @@
         clinical_significance: "臨床的意義",
         statsTrend: "選択率と偏差値の推移",
         stats_trend: "選択率と偏差値の推移",
-        imageId: "画像",
-        image_id: "画像",
-        "画像": "画像",
       };
       const preferredOrder = [
         "comment",
@@ -2358,9 +2355,6 @@
         "clinical",
         "stats_trend",
         "statsTrend",
-        "image_id",
-        "imageId",
-        "画像",
       ];
       const codeKeys = ["question_code", "code", "questionCode"];
       // 画像関連ユーティリティ
@@ -2378,180 +2372,6 @@
         // generic fallback
         return /^image(_id)?$/i.test(k) || /_image(_id)?$/i.test(k);
       };
-      const hasImageExt = (value) => /\.[a-z0-9]+$/i.test(value);
-      const sanitizeImageValue = (value) => {
-        // trim + remove surrounding quotes + normalize slashes
-        let v = String(value ?? "").trim();
-        // remove wrapping single/double quotes
-        if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
-          v = v.slice(1, -1).trim();
-        }
-        // some CSVs might accidentally include whitespace/newlines
-        v = v.replace(/\r?\n/g, "").trim();
-        v = v.replace(/\\/g, "/");
-        return v;
-      };
-
-    // ============================
-    // 画像: png/jpg/jpeg 混在対応（onerror フォールバック）
-    // ============================
-    function buildImageCandidates(value) {
-      const v0 = sanitizeImageValue(value);
-      if (!v0) return [];
-
-      // URL / absolute / already-relative path
-      const isUrlLike = /^https?:\/\//i.test(v0) || v0.startsWith("/") || v0.startsWith("data/");
-
-      // helper: make src
-      const mk = (name) => {
-        if (!name) return "";
-        if (/^https?:\/\//i.test(name)) return name;
-        if (name.startsWith("/") || name.startsWith("data/")) return name;
-        return `data/images/${name}`;
-      };
-
-      const uniq = (arr) => {
-        const seen = new Set();
-        return arr.filter((x) => {
-          if (!x) return false;
-          const k = String(x);
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        });
-      };
-
-      // PNG統一: base と base-1..base-4 だけ試す
-      const buildBaseVariants = (base) => {
-        const b = String(base || "").trim();
-        if (!b) return [];
-        const variants = [b];
-        // If already ends with -<digit>, don't add again
-        if (!/-\d+$/.test(b)) {
-          for (let i = 1; i <= 4; i++) variants.push(`${b}-${i}`);
-        }
-        return variants;
-      };
-
-      // 1) 拡張子付きで渡ってきても .png に寄せる
-      let base = v0;
-      if (/\.[A-Za-z0-9]+$/.test(base)) {
-        base = base.replace(/\.[A-Za-z0-9]+$/, "");
-      }
-
-      // URLっぽい場合はそのままも候補に残す（保険）
-      const candsRaw = [];
-      if (isUrlLike) candsRaw.push(mk(v0));
-
-      // 2) base / base-1..4 に .png を付けて候補化
-      const baseVariants = buildBaseVariants(base);
-      for (const bv of baseVariants) {
-        candsRaw.push(mk(`${bv}.png`));
-      }
-
-      return uniq(candsRaw);
-    }
-
-    async function resolveFirstExisting(urls) {
-      const list = Array.isArray(urls) ? urls.filter(Boolean) : [];
-      for (const url of list) {
-        try {
-          // Try HEAD first (fast). Some dev servers may not support it; we'll fallback.
-          const r = await fetch(url, { method: "HEAD", cache: "no-store" });
-          if (r.ok) return url;
-        } catch (e) {
-          // ignore
-        }
-        try {
-          // Fallback GET (may download, but ensures existence check)
-          const r2 = await fetch(url, { method: "GET", cache: "no-store" });
-          if (r2.ok) return url;
-        } catch (e2) {
-          // ignore
-        }
-      }
-      return "";
-    }
-
-    function attachImageFallback(imgEl, candidates) {
-      if (!imgEl) return;
-      const list = Array.isArray(candidates) ? candidates.filter(Boolean) : [];
-      imgEl.dataset.candidates = JSON.stringify(list);
-      imgEl.dataset.candIndex = "0";
-
-      const linkEl = document.getElementById(`link_${imgEl.id}`);
-      const linksEl = document.getElementById(`links_${imgEl.id}`);
-
-      // 候補リンク一覧は常に表示（存在しない場合でも確認用）
-      if (linksEl) {
-        linksEl.innerHTML = list
-          .map((url, idx) => {
-            const label = `候補${idx + 1}`;
-            return `<a href="${url}" target="_blank" rel="noopener">${label}</a>`;
-          })
-          .join(" ");
-      }
-
-      // メインリンクは「実在確認後」に表示する（404へ飛ばないように）
-      if (linkEl) {
-        linkEl.href = "#";
-        linkEl.style.display = "none";
-        linkEl.onclick = (ev) => {
-          ev.preventDefault();
-          const currentSrc = imgEl.currentSrc || imgEl.src;
-          if (currentSrc) {
-            window.open(currentSrc, "_blank", "noopener");
-          }
-        };
-      }
-
-      // onload 時にメインリンク更新
-      imgEl.onload = function () {
-        const currentSrc = this.currentSrc || this.src;
-        if (linkEl && currentSrc) {
-          linkEl.href = currentSrc;
-          linkEl.style.display = "inline-flex";
-        }
-      };
-
-      // onerror はフォールバック（ただし最初の src は preflight で決める）
-      imgEl.onerror = function () {
-        try {
-          const cands = JSON.parse(this.dataset.candidates || "[]");
-          const idx = Number(this.dataset.candIndex || "0");
-          const next = cands[idx + 1];
-          if (next) {
-            this.dataset.candIndex = String(idx + 1);
-            this.src = next;
-            return;
-          }
-        } catch (e) {
-          // noop
-        }
-        console.error("image load failed (no more candidates):", this.src);
-      };
-
-      // ===== preflight: first existing URL =====
-      (async () => {
-        if (!list.length) return;
-        const okUrl = await resolveFirstExisting(list);
-        if (okUrl) {
-          imgEl.src = okUrl;
-          const idx = list.indexOf(okUrl);
-          if (idx >= 0) imgEl.dataset.candIndex = String(idx);
-          if (linkEl) {
-            linkEl.href = okUrl;
-            linkEl.style.display = "inline-flex";
-          }
-        } else {
-          // none exists: keep link hidden, but keep candidate list visible
-          if (linkEl) {
-            linkEl.href = "#";
-            linkEl.style.display = "none";
-          }
-        }
-      })();
-    }
 
       const allKeys = Object.keys(ex).filter((key) => !codeKeys.includes(key));
       const orderedKeys = [
@@ -2569,25 +2389,7 @@
           const title = labelMap[key] || key;
 
           if (isImageKey(key)) {
-            const cands = buildImageCandidates(value.trim());
-            if (!cands.length) return "";
-            const imgId = `img_${code}_${key}`.replace(/[^a-zA-Z0-9_\-]/g, "_");
-            // placeholder img を生成し、描画後に候補をセットしてフォールバック
-            setTimeout(() => {
-              const el = document.getElementById(imgId);
-              if (el) attachImageFallback(el, cands);
-            }, 0);
-
-            return `
-              <details class="accordion-item" open>
-                <summary>${title}</summary>
-                <div class="accordion-body">
-                  <a id="link_${imgId}" href="#" target="_blank" rel="noopener" style="display:inline-flex; gap:8px; align-items:center; margin-bottom:6px;">画像を新しいタブで開く</a>
-                  <span id="links_${imgId}" style="display:block; margin-bottom:8px; font-size:0.85rem; color: var(--muted);"></span>
-                  <img id="${imgId}" alt="解説画像" style="max-width:100%; height:auto;" />
-                </div>
-              </details>
-            `;
+            return ""; // A-3末尾の「画像」欄は使わないので表示しない
           }
 
           return `
