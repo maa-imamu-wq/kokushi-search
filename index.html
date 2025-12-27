@@ -2525,7 +2525,7 @@
       a3Comment.innerHTML = sectionsHtml;
 
       // 「選択率と偏差値の推移」: 対応画像があれば横に表示（無ければ何も出さない）
-      // 重要: 画像リクエストが必ず発火するよう、img を先にDOMへ追加してから src を設定する
+      // 重要: キャッシュ済み画像でも onload が確実に動くように、onload/onerror を先に設定してから src を入れる
       Array.from(a3Comment.querySelectorAll('[data-trend-code]')).forEach((holder) => {
         const qcode = String(holder.getAttribute('data-trend-code') || '').trim();
         if (!qcode) return;
@@ -2539,11 +2539,6 @@
         imgEl.decoding = "async";
         imgEl.loading = "lazy";
         imgEl.alt = "選択率と偏差値の推移";
-        // 先にDOMへ入れる（ネットワークリクエストを確実に発火させる）
-        holder.appendChild(imgEl);
-
-        // いったん非表示で開始（成功したら表示）
-        holder.classList.add("is-empty");
 
         let idx = 0;
         const setSrc = (url) => {
@@ -2553,6 +2548,7 @@
           console.log("trend image try:", qcode, imgEl.src);
         };
 
+        // 先にイベントを設定（キャッシュ済みでも onload を取りこぼさない）
         imgEl.onload = () => {
           holder.classList.remove("is-empty");
         };
@@ -2569,6 +2565,12 @@
           holder.innerHTML = "";
           holder.classList.add("is-empty");
         };
+
+        // DOMへ先に入れる（表示領域確保）
+        holder.appendChild(imgEl);
+
+        // いったん非表示で開始（成功したら表示）
+        holder.classList.add("is-empty");
 
         // 最初の候補から順に試す
         setSrc(cands[idx]);
