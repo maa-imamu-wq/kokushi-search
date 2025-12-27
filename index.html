@@ -622,6 +622,9 @@
     .a3-trend-image.is-empty {
       display: none;
     }
+    .a3-trend-image.is-loading {
+      opacity: 0.65;
+    }
 
     @media (max-width: 900px) {
       .a3-trend-wrap {
@@ -2505,7 +2508,7 @@
                 <div class="accordion-body">
                   <div class="a3-trend-wrap">
                     <div class="a3-trend-text">${formatExText(value)}</div>
-                    <div class="a3-trend-image is-empty" id="${holderId}" data-trend-code="${rawCode}"></div>
+                    <div class="a3-trend-image is-loading" id="${holderId}" data-trend-code="${rawCode}"></div>
                   </div>
                 </div>
               </details>
@@ -2537,7 +2540,8 @@
 
         const imgEl = document.createElement("img");
         imgEl.decoding = "async";
-        imgEl.loading = "lazy";
+        // NOTE: holder を display:none にすると lazy が発火しないことがあるため eager にする
+        imgEl.loading = "eager";
         imgEl.alt = "選択率と偏差値の推移";
 
         let idx = 0;
@@ -2551,6 +2555,7 @@
         // 先にイベントを設定（キャッシュ済みでも onload を取りこぼさない）
         imgEl.onload = () => {
           holder.classList.remove("is-empty");
+          holder.classList.remove("is-loading");
         };
 
         imgEl.onerror = () => {
@@ -2564,13 +2569,15 @@
           console.warn("trend image not found:", qcode, "last tried:", tried, "candidates:", cands);
           holder.innerHTML = "";
           holder.classList.add("is-empty");
+          holder.classList.remove("is-loading");
         };
 
         // DOMへ先に入れる（表示領域確保）
         holder.appendChild(imgEl);
 
-        // いったん非表示で開始（成功したら表示）
-        holder.classList.add("is-empty");
+        // ロード中は is-loading（display:none にしない）
+        holder.classList.remove("is-empty");
+        holder.classList.add("is-loading");
 
         // 最初の候補から順に試す
         setSrc(cands[idx]);
