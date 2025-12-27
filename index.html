@@ -198,6 +198,25 @@
       display: none;
     }
 
+    /* A-4: 基準は表の見出しクリックで切り替えるため、select/tabsは非表示（ロジック用に残す） */
+    label[for="a4BasisSelect"],
+    #a4BasisSelect,
+    #a4BasisTabs,
+    .a4-basis-tabs {
+      display: none;
+    }
+
+    th.a4-sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.a4-sortable:hover {
+      text-decoration: underline;
+    }
+    .a4-selected-col {
+      background: rgba(31, 107, 95, 0.10);
+    }
+
     button.primary,
     button.secondary {
       padding: 8px 16px;
@@ -840,7 +859,7 @@
               </select>
             </div>
 
-            <div style="flex:1 1 200px;">
+            <div style="flex:1 1 200px;" class="is-hidden">
               <label for="a4BasisSelect">基準</label>
               <select id="a4BasisSelect">
                 <option value="totalScore">合計点数</option>
@@ -854,7 +873,7 @@
           </div>
 
           <p class="subtitle" style="margin-top:8px;">
-            ※ 基準は「合計問題数 / 必修 / 一般 / 状況 / 正答率70%以上の問題数」でソートされます。
+            ※ 表の見出し（合計点数・合計問題数・必修問題数・一般問題数・状況問題数・正答率70%以上）をクリックすると、基準を切り替えられます。
           </p>
         </div>
 
@@ -1278,7 +1297,8 @@
     let currentRbcFilter = "";
     let currentQuestionCode = null;
     let currentA4Chapter = "";
-    let currentA4Basis = "totalAll";
+    // A-4の初期表示は「合計点数」基準
+    let currentA4Basis = "totalScore";
 
     // ============================
     // 3) 検索ボタン（A-2）
@@ -1930,7 +1950,9 @@
 
       // 初期値
       currentA4Chapter = "";
-      currentA4Basis = a4BasisSelect ? a4BasisSelect.value : "totalScore";
+      // 基準は表ヘッダークリックで切り替える（selectは互換用）
+      currentA4Basis = "totalScore";
+      if (a4BasisSelect) a4BasisSelect.value = currentA4Basis;
 
       // 互換用 select からの変更も拾う（将来のため）
       if (a4ChapterSelect) {
@@ -1947,10 +1969,10 @@
         });
       }
 
-      // 基準変更
+      // 基準変更は表ヘッダークリックで行う（selectは互換用）
       if (a4BasisSelect) {
         a4BasisSelect.addEventListener("change", () => {
-          currentA4Basis = a4BasisSelect.value;
+          currentA4Basis = a4BasisSelect.value || "totalScore";
           renderA4RankingTable();
         });
       }
@@ -1996,7 +2018,7 @@
       }
 
       if (a4RankingCount) {
-        a4RankingCount.textContent = `${list.length}件のRBCがあります`;
+        a4RankingCount.textContent = `${list.length}件のRBCがあります（表の見出しクリックで基準を切り替え）`;
       }
 
       const rowsHtml = list
@@ -2018,17 +2040,17 @@
         .join("");
 
       const tableHtml = `
-        <table>
+        <table id="a4Table">
           <thead>
             <tr>
               <th>順位</th>
               <th>RBC</th>
-              <th>合計点数</th>
-              <th>合計問題数</th>
-              <th>必修問題数</th>
-              <th>一般問題数</th>
-              <th>状況問題数</th>
-              <th>正答率70%以上の問題数</th>
+              <th class="a4-sortable" data-basis="totalScore">合計点数</th>
+              <th class="a4-sortable" data-basis="totalAll">合計問題数</th>
+              <th class="a4-sortable" data-basis="totalKishu">必修問題数</th>
+              <th class="a4-sortable" data-basis="totalIppan">一般問題数</th>
+              <th class="a4-sortable" data-basis="totalJokyo">状況問題数</th>
+              <th class="a4-sortable" data-basis="totalOver70">正答率70%以上の問題数</th>
             </tr>
           </thead>
           <tbody>
@@ -2038,6 +2060,41 @@
       `;
 
       a4RankingTable.innerHTML = tableHtml;
+
+      const tableEl = a4RankingTable.querySelector("#a4Table");
+      if (tableEl) {
+        const ths = Array.from(tableEl.querySelectorAll("th[data-basis]"));
+        ths.forEach((th) => {
+          th.addEventListener("click", () => {
+            const basis = th.getAttribute("data-basis") || "totalScore";
+            currentA4Basis = basis;
+            if (a4BasisSelect) a4BasisSelect.value = currentA4Basis;
+            renderA4RankingTable();
+          });
+        });
+
+        const basisToColIndex = {
+          totalScore: 2,
+          totalAll: 3,
+          totalKishu: 4,
+          totalIppan: 5,
+          totalJokyo: 6,
+          totalOver70: 7,
+        };
+        const colIdx = basisToColIndex[currentA4Basis] ?? 2;
+
+        // header highlight
+        tableEl.querySelectorAll("thead th").forEach((cell, i) => {
+          cell.classList.toggle("a4-selected-col", i === colIdx);
+        });
+
+        // body highlight
+        tableEl.querySelectorAll("tbody tr").forEach((tr) => {
+          Array.from(tr.children).forEach((td, i) => {
+            td.classList.toggle("a4-selected-col", i === colIdx);
+          });
+        });
+      }
     }
 
     // ============================
