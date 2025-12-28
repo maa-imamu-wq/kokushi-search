@@ -663,8 +663,8 @@
         <div class="card">
           <div class="section-title">メニュー</div>
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <button class="primary" onclick="showView('A2')">RBCから検索（A-2へ）</button>
-            <button class="secondary" onclick="showView('A4')">出題ランキングから検索（A-4へ）</button>
+            <button id="btnToA2" class="primary">RBCから検索（A-2へ）</button>
+            <button id="btnToA4" class="secondary">出題ランキングから検索（A-4へ）</button>
           </div>
         </div>
       </div>
@@ -765,7 +765,7 @@
           <div id="a3Code">問題番号</div>
           <div class="a3-actions">
             <button id="a3EditToggleButton" class="primary">編集</button>
-            <button class="secondary" onclick="showView('A2')">前の検索へ（A-2に戻る）</button>
+            <button id="btnBackToA2" class="secondary">前の検索へ（A-2に戻る）</button>
           </div>
         </div>
 
@@ -885,7 +885,7 @@
           <div id="a4RankingTable"></div>
         </div>
 
-        <button class="secondary" onclick="showView('A1')">ホーム（A-1）に戻る</button>
+        <button id="btnBackToA1" class="secondary">ホーム（A-1）に戻る</button>
       </div>
     </main>
   </div>
@@ -959,6 +959,20 @@
     navA1.addEventListener("click", () => showView("A1"));
     navA2.addEventListener("click", () => showView("A2"));
     navA4.addEventListener("click", () => showView("A4"));
+
+    // Inline onclick を使わずに遷移（スコープ問題の回避）
+    const btnToA2 = document.getElementById("btnToA2");
+    const btnToA4 = document.getElementById("btnToA4");
+    const btnBackToA2 = document.getElementById("btnBackToA2");
+    const btnBackToA1 = document.getElementById("btnBackToA1");
+
+    if (btnToA2) btnToA2.addEventListener("click", () => showView("A2"));
+    if (btnToA4) btnToA4.addEventListener("click", () => showView("A4"));
+    if (btnBackToA2) btnBackToA2.addEventListener("click", () => showView("A2"));
+    if (btnBackToA1) btnBackToA1.addEventListener("click", () => showView("A1"));
+
+    // 念のため window にも再公開（テーブル行の inline onclick 用）
+    window.showView = showView;
 
     // ============================
     // 1) データ配列
