@@ -2100,24 +2100,40 @@
       const name = String(rbcName || "").trim();
       if (!name) return;
 
-      const list = questions.filter((q) => String(q.rbcName || "").trim() === name);
+      // A-4 -> A-2 へ遷移し、RBCを選択した状態にする（A-3へは飛ばさない）
+      // 1) まず A-2 を表示
+      showView("A2");
 
-      if (!list.length) {
-        alert(`このRBC（${name}）に対応する問題が見つかりませんでした。`);
-        return;
+      // 2) A-2 上部の「章」タブは、可能なら A-4 で選んでいる章に合わせる
+      //    （currentA4Chapter が空なら合わせない）
+      if (currentA4Chapter && chapterTabs) {
+        const btn = chapterTabs.querySelector(`button[data-chapter="${CSS.escape(currentA4Chapter)}"]`);
+        if (btn) {
+          btn.click(); // currentChapter を更新し、RBCタブを再構築
+        }
       }
 
-      // 代表として「最新っぽい」1問（コード降順）
-      list.sort((a, b) => String(b.code || "").localeCompare(String(a.code || "")));
-      const target = list[0];
+      // 3) RBC フィルタ入力に反映（タブが出るUIのため）
+      if (rbcFilterInput) {
+        rbcFilterInput.value = name;
+        currentRbcFilter = name;
+        // buildRbcTabs は input ハンドラにぶら下がっているので明示的に呼ぶ
+        buildRbcTabs();
+      }
 
-      // A-2入力も同期（任意：戻った時の一貫性）
+      // 4) 既存の検索処理を再利用（サマリー+問題一覧を表示）
       if (rbcInput) rbcInput.value = name;
+      if (searchButton) {
+        searchButton.click();
+      } else {
+        // 念のためのフォールバック
+        const qs = questions.filter((q) => String(q.rbcName || "").trim() === name);
+        renderQuestionList(qs, name);
+      }
 
-      openQuestionDetail(target.code, "A4");
+      // A-4 から来たことが分かるようにトースト
+      showToast(`A-2で「${name}」を表示しました`);
     }
-    window.goToRbcFromA4 = goToRbcFromA4;
-    // Expose for inline onclick handlers
     window.goToRbcFromA4 = goToRbcFromA4;
     // ============================
     if (a3EditToggleButton) {
