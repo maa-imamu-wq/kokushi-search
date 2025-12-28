@@ -2430,7 +2430,21 @@
       // 解説: <ex>〜</ex> を段落に変換して表示
       const formatExText = (text) => {
         if (!text) return "";
-        return text.replace(/<ex>/g, "<p>").replace(/<\/ex>/g, "</p>");
+
+        // 1) Normalize newlines
+        let html = String(text)
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n");
+
+        // 2) Keep the existing <ex> paragraph markers
+        html = html.replace(/<ex>/g, "<p>").replace(/<\\/ex>/g, "</p>");
+
+        // 3) Render CSV newlines as visible line breaks in the site
+        //    - single \n => <br>
+        //    - multiple \n => <br><br>
+        html = html.replace(/\n{2,}/g, "<br><br>").replace(/\n/g, "<br>");
+
+        return html;
       };
 
       const ex = q.explanation || {};
