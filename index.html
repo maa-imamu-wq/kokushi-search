@@ -2462,8 +2462,9 @@
           .replace(/\r\n/g, "\n")
           .replace(/\r/g, "\n");
 
-        // 2) Keep the existing <ex> paragraph markers
-        html = html.replace(/<ex>/g, "<p>").replace(/<\\/ex>/g, "</p>");
+        // Convert custom paragraph markers safely (avoid regex literal edge-cases)
+        html = html.split("<ex>").join("<p>");
+        html = html.split("</ex>").join("</p>");
 
         // 3) Render CSV newlines as visible line breaks in the site
         //    - single \n => <br>
