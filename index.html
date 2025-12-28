@@ -952,6 +952,8 @@
         if (mainEl) mainEl.scrollTop = 0;
       }
     }
+    // Expose navigation helpers for inline handlers (Cloudflare Pages / strict scopes safety)
+    window.showView = showView;
 
     // ナビボタンにも showView をつなぐ
     navA1.addEventListener("click", () => showView("A1"));
@@ -2078,6 +2080,8 @@
         alert("RBC検索ボックスが見つかりませんでした。");
       }
     }
+    // Expose for inline onclick handlers
+    window.goToRbcFromA4 = goToRbcFromA4;
     // ============================
     if (a3EditToggleButton) {
       a3EditToggleButton.addEventListener("click", () => {
@@ -2600,6 +2604,8 @@
       // 画面を A-3 に切り替え
       showView("A3");
     }
+    // Expose for inline onclick handlers in tables
+    window.openQuestionDetail = openQuestionDetail;
   </script>
 </body>
 </html>
