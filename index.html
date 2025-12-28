@@ -766,6 +766,7 @@
           <div class="a3-actions">
             <button id="a3EditToggleButton" class="primary">編集</button>
             <button id="btnA3BackToA2" class="secondary" type="button">前の検索へ（A-2に戻る）</button>
+            <button id="btnA3BackToA4" class="secondary" type="button" style="display:none;">出題ランキングに戻る（A-4）</button>
           </div>
         </div>
 
@@ -968,12 +969,14 @@
     bindNavButton("btnA1ToA2", "A2");
     bindNavButton("btnA1ToA4", "A4");
     bindNavButton("btnA3BackToA2", "A2");
+    bindNavButton("btnA3BackToA4", "A4");
     bindNavButton("btnA4BackToA1", "A1");
 
     console.log("nav buttons bound", {
       btnA1ToA2: !!document.getElementById("btnA1ToA2"),
       btnA1ToA4: !!document.getElementById("btnA1ToA4"),
       btnA3BackToA2: !!document.getElementById("btnA3BackToA2"),
+      btnA3BackToA4: !!document.getElementById("btnA3BackToA4"),
       btnA4BackToA1: !!document.getElementById("btnA4BackToA1"),
     });
 
@@ -1287,6 +1290,8 @@
     let currentRbc = null;
     let currentRbcFilter = "";
     let currentQuestionCode = null;
+    // A-3 をどこから開いたか（A2 or A4）
+    let lastA3Origin = "A2";
     let currentA4Chapter = "";
     // A-4の初期表示は「合計点数」基準
     let currentA4Basis = "totalScore";
@@ -2092,16 +2097,26 @@
     // A-4: ランキング行クリックで A-2 の該当RBCへ遷移
     // ============================
     function goToRbcFromA4(rbcName) {
-      if (!rbcName) return;
-      if (rbcInput) {
-        rbcInput.value = rbcName;
-        showView("A2");
-        searchButton.click();
-      } else {
-        // 念のため
-        alert("RBC検索ボックスが見つかりませんでした。");
+      const name = String(rbcName || "").trim();
+      if (!name) return;
+
+      const list = questions.filter((q) => String(q.rbcName || "").trim() === name);
+
+      if (!list.length) {
+        alert(`このRBC（${name}）に対応する問題が見つかりませんでした。`);
+        return;
       }
+
+      // 代表として「最新っぽい」1問（コード降順）
+      list.sort((a, b) => String(b.code || "").localeCompare(String(a.code || "")));
+      const target = list[0];
+
+      // A-2入力も同期（任意：戻った時の一貫性）
+      if (rbcInput) rbcInput.value = name;
+
+      openQuestionDetail(target.code, "A4");
     }
+    window.goToRbcFromA4 = goToRbcFromA4;
     // Expose for inline onclick handlers
     window.goToRbcFromA4 = goToRbcFromA4;
     // ============================
@@ -2178,7 +2193,7 @@
 
         // 編集フォームを閉じて再描画
         a3EditSection.style.display = "none";
-        openQuestionDetail(currentQuestionCode);
+        openQuestionDetail(currentQuestionCode, lastA3Origin);
         showToast("保存しました。");
       });
     }
@@ -2362,7 +2377,7 @@
           const discrText = stat && stat.discrimination != null ? `${stat.discrimination}` : "";
 
           return `
-            <tr onclick="openQuestionDetail('${q.code}')">
+            <tr onclick="openQuestionDetail('${q.code}', 'A2')">
               <td>${q.code}</td>
               <td>${q.environment || ""}</td>
               <td>${q.body || ""}</td>
@@ -2398,8 +2413,20 @@
     // ============================
     // A-3: 問題詳細画面へ遷移して描画
     // ============================
-    async function openQuestionDetail(code) {
+    async function openQuestionDetail(code, origin) {
       currentQuestionCode = code;
+      lastA3Origin = (origin === "A4") ? "A4" : "A2";
+      const backToA2Btn = document.getElementById("btnA3BackToA2");
+      const backToA4Btn = document.getElementById("btnA3BackToA4");
+      if (backToA2Btn && backToA4Btn) {
+        if (lastA3Origin === "A4") {
+          backToA2Btn.style.display = "none";
+          backToA4Btn.style.display = "inline-flex";
+        } else {
+          backToA2Btn.style.display = "inline-flex";
+          backToA4Btn.style.display = "none";
+        }
+      }
       // D1に保存された編集差分を取り込み、表示に反映
       await applyPatchToQuestion(code);
 
