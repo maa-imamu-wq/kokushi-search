@@ -1354,9 +1354,18 @@
       const lowerKeyword = keyword.toLowerCase();
 
       // A-2 下半分：項目.csv から該当RBCの問題リストを取得
-      const qs = questions.filter(
-        (q) => q.rbcName && q.rbcName.toLowerCase().includes(lowerKeyword)
+      // まず「完全一致」を優先し、該当がなければ部分一致（従来挙動）にフォールバックする
+      const exactQs = questions.filter(
+        (q) =>
+          q.rbcName &&
+          String(q.rbcName).trim().toLowerCase() === lowerKeyword
       );
+
+      const qs = exactQs.length
+        ? exactQs
+        : questions.filter(
+            (q) => q.rbcName && q.rbcName.toLowerCase().includes(lowerKeyword)
+          );
 
       // A-2 上部サマリー表示
       if (qs.length > 0) {
@@ -1959,11 +1968,13 @@
             .forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
 
-          // 既存の検索処理を再利用
+          // タブ選択時は「完全一致」で検索（似た項目名への誤爆を防ぐ）
           if (rbcInput) {
             rbcInput.value = currentRbc;
-            searchButton.click();
           }
+          // クリック検索と同じUI更新を使うために click を呼ぶ
+          // ただし searchButton 側で「完全一致があれば優先」するため誤爆しない
+          if (searchButton) searchButton.click();
         });
       });
     }
