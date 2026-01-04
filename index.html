@@ -275,12 +275,15 @@
     .mini-tabs {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 4px;
+      align-items: center;
+      /* 章タブをコンパクトにして、下段（合計/内訳）を上に寄せる */
+      margin-top: 2px;
     }
 
     .mini-tab-button {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       border-radius: 50%;
       border: 1px solid var(--border);
       background: var(--chip-bg);
@@ -288,11 +291,12 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.78rem;
-      font-weight: 600;
+      font-size: 0.72rem;
+      font-weight: 700;
       padding: 0;
       cursor: pointer;
       transition: all 0.2s ease;
+      line-height: 1;
     }
 
     .mini-tab-button.active {
@@ -393,7 +397,7 @@
       background: var(--chip-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 10px 12px;
+      padding: 8px 10px;
       box-shadow: 0 2px 8px rgba(26, 22, 18, 0.04);
     }
 
@@ -2327,6 +2331,20 @@
           answer: cols[10] || "",
           comment: cols[11] || "",
         };
+
+        // rbc_small.csv（rbcItems）と join して、章などのメタ情報を付与
+        const qRbcId = Number.isFinite(q.rbcId) ? q.rbcId : null;
+        const qRbcName = String(q.rbcName || "").trim();
+        const master = (qRbcId != null)
+          ? (rbcItems.find((it) => it.id === qRbcId) || null)
+          : null;
+        const masterByName = master || (qRbcName
+          ? (rbcItems.find((it) => String(it.rbcName || "").trim() === qRbcName) || null)
+          : null);
+
+        q.chapter = masterByName ? String(masterByName.chapter || "").trim() : "";
+        q.major = masterByName ? String(masterByName.major || "").trim() : "";
+        q.middle = masterByName ? String(masterByName.middle || "").trim() : "";
 
         if (q.code && q.rbcName) {
           questions.push(q);
