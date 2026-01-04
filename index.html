@@ -272,6 +272,35 @@
       border-color: var(--primary);
     }
 
+    .mini-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .mini-tab-button {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--chip-bg);
+      color: var(--text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mini-tab-button.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
     .result-count {
       margin-top: 8px;
       font-size: 0.9rem;
@@ -705,17 +734,13 @@
             <div id="a2Summary" class="summary-box is-hidden">
               <div class="summary-item">
                 <div class="section-title">章</div>
-                <div class="summary-value" id="a2Chapter"></div>
+                <div id="a2ChapterMiniTabs" class="mini-tabs"></div>
+                <div class="summary-value is-hidden" id="a2Chapter"></div>
               </div>
 
               <div class="summary-item">
                 <div class="section-title">RBC</div>
                 <div class="summary-value" id="a2RbcName"></div>
-              </div>
-
-              <div class="summary-item wide">
-                <div class="section-title">出題傾向</div>
-                <div class="summary-value" id="a2Analysis" style="white-space: pre-wrap;"></div>
               </div>
 
               <div class="summary-item">
@@ -732,6 +757,11 @@
                   一般 <span id="a2Ippan"></span>問<br />
                   状況 <span id="a2Jokyo"></span>問
                 </div>
+              </div>
+
+              <div class="summary-item wide">
+                <div class="section-title">出題傾向</div>
+                <div class="summary-value" id="a2Analysis" style="white-space: pre-wrap;"></div>
               </div>
             </div>
             </div>
@@ -1085,6 +1115,7 @@
     // A-2 サマリー部
     const a2Summary = document.getElementById("a2Summary");
     const a2Chapter = document.getElementById("a2Chapter");
+    const a2ChapterMiniTabs = document.getElementById("a2ChapterMiniTabs");
     const a2RbcName = document.getElementById("a2RbcName");
     const a2Analysis = document.getElementById("a2Analysis");
     const a2TotalAll = document.getElementById("a2TotalAll");
@@ -1290,6 +1321,7 @@
     let currentRbc = null;
     let currentRbcFilter = "";
     let currentQuestionCode = null;
+    let allChaptersForA2 = [];
     // A-3 をどこから開いたか（A2 or A4）
     let lastA3Origin = "A2";
     let currentA4Chapter = "";
@@ -1317,6 +1349,7 @@
       if (qs.length > 0) {
         const qfirst = qs[0];
         a2Chapter.textContent = qfirst.chapter || "";
+        renderA2ChapterMiniTabs(allChaptersForA2, qfirst.chapter);
         a2RbcName.textContent = qfirst.rbcName || "";
 
         // 出題傾向（rbc_analysis.csv）
@@ -1368,6 +1401,7 @@
       } else {
         // 問題自体が0件の場合
         a2Chapter.textContent = "";
+        setActiveMiniTab("");
         a2RbcName.textContent = "";
         // タブ/検索入力で選んだRBC名は残す（0件でも分野が分かるように）
         a2RbcName.textContent = keyword;
@@ -1769,6 +1803,49 @@
     // ============================
     // 章タブ / RBCタブの構築
     // ============================
+    function setActiveMiniTab(activeChapter) {
+      if (!a2ChapterMiniTabs) return;
+      const active = String(activeChapter || "").trim();
+      Array.from(a2ChapterMiniTabs.querySelectorAll("button")).forEach((btn) => {
+        const ch = btn.getAttribute("data-chapter") || "";
+        const isActive = active !== "" && ch === active;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+    }
+
+    function renderA2ChapterMiniTabs(chapters, activeChapter) {
+      if (!a2ChapterMiniTabs) return;
+      const list = Array.isArray(chapters)
+        ? chapters.map((ch) => String(ch || "").trim()).filter((ch) => ch !== "")
+        : [];
+
+      if (!list.length) {
+        a2ChapterMiniTabs.innerHTML = "";
+        return;
+      }
+
+      a2ChapterMiniTabs.innerHTML = list
+        .map((ch) => {
+          const label = ch.slice(0, 1);
+          return `<button class="mini-tab-button" data-chapter="${ch}" aria-pressed="false">${label}</button>`;
+        })
+        .join("");
+
+      Array.from(a2ChapterMiniTabs.querySelectorAll("button")).forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const ch = btn.getAttribute("data-chapter") || "";
+          if (!chapterTabs) return;
+          const target = chapterTabs.querySelector(
+            `button[data-chapter="${CSS.escape(ch)}"]`
+          );
+          if (target) target.click();
+        });
+      });
+
+      setActiveMiniTab(activeChapter);
+    }
+
     function buildChapterTabs() {
       if (!rbcItems.length || !chapterTabs) return;
 
@@ -1780,6 +1857,8 @@
       )];
 
       chapters.sort();
+      allChaptersForA2 = chapters.slice();
+      renderA2ChapterMiniTabs(allChaptersForA2, currentChapter);
 
       chapterTabs.innerHTML = chapters
         .map(
@@ -1812,6 +1891,7 @@
           }
 
           buildRbcTabs();
+          renderA2ChapterMiniTabs(allChaptersForA2, currentChapter);
         });
       });
     }
