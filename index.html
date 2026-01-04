@@ -2460,6 +2460,47 @@
     }
 
     // ============================
+    // A-2: 問題番号で「新しい問題が上」になるように並び替え
+    // 例: 114P113, 113A093 など
+    // 優先度: 年(先頭3桁) desc -> 種別(英字) desc -> 通し番号(末尾) desc
+    // ============================
+    function parseQuestionCode(code) {
+      const s = String(code || "").trim();
+      // 想定: 3桁 + 英字1〜2 + 3桁（例: 114P113 / 112PA01 などの揺れに一応対応）
+      const m = s.match(/^(\d{3})([A-Za-z]{1,2})(\d{2,3})$/);
+      if (!m) {
+        // 形式が違う場合は、文字列として扱う（後段で降順ソート）
+        return { year: -1, type: "", num: -1, raw: s };
+      }
+      const year = Number(m[1]);
+      const type = String(m[2] || "").toUpperCase();
+      const num = Number(m[3]);
+      return {
+        year: Number.isFinite(year) ? year : -1,
+        type,
+        num: Number.isFinite(num) ? num : -1,
+        raw: s,
+      };
+    }
+
+    function compareQuestionCodeDesc(aCode, bCode) {
+      const a = parseQuestionCode(aCode);
+      const b = parseQuestionCode(bCode);
+
+      // year desc
+      if (a.year !== b.year) return b.year - a.year;
+
+      // type desc (Z -> A)
+      if (a.type !== b.type) return b.type.localeCompare(a.type);
+
+      // num desc
+      if (a.num !== b.num) return b.num - a.num;
+
+      // fallback: raw desc
+      return String(b.raw).localeCompare(String(a.raw));
+    }
+
+    // ============================
     // A-2: 指定RBCの問題一覧を描画（項目.csvベース）
     // ============================
     function renderQuestionList(list, keyword) {
@@ -2469,9 +2510,12 @@
         return;
       }
 
-      resultCount.textContent = `${list.length}件ヒットしました`;
+      // 「新しい問題が上」になるように並び替え（元配列は破壊しない）
+      const sortedList = list.slice().sort((qa, qb) => compareQuestionCodeDesc(qa.code, qb.code));
 
-      const rows = list
+      resultCount.textContent = `${sortedList.length}件ヒットしました`;
+
+      const rows = sortedList
         .map((q) => {
           const stat = questionStats.find((s) => s.code === q.code) || null;
           const choiceRates = stat ? stat.choiceRates : [];
