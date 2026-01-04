@@ -686,12 +686,12 @@
 <body>
   <header class="app-header">
     <div class="brand">国試分析</div>
-    <div id="currentViewLabel" class="view-label">A-1 ホーム</div>
+    <div id="currentViewLabel" class="view-label">ホーム</div>
   </header>
   <nav class="top-nav">
-    <button id="navA1" class="active">A-1 ホーム</button>
-    <button id="navA2">A-2 RBCから検索</button>
-    <button id="navA4">A-4 出題ランキングから検索</button>
+    <button id="navA1" class="active">ホーム</button>
+    <button id="navA2">RBCから検索</button>
+    <button id="navA4">出題ランキングから検索</button>
   </nav>
 
   <div class="app-shell">
@@ -699,14 +699,14 @@
       <!-- A-1 ホーム画面 -->
       <div id="viewA1" class="view active">
         <div class="card">
-          <h2 class="view-title">A-1 ホーム</h2>
+          <h2 class="view-title">ホーム</h2>
           <p class="subtitle">国試のRBC別分析ツールです。</p>
         </div>
         <div class="card">
           <div class="section-title">メニュー</div>
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <button id="btnA1ToA2" class="primary" type="button">RBCから検索（A-2へ）</button>
-            <button id="btnA1ToA4" class="secondary" type="button">出題ランキングから検索（A-4へ）</button>
+            <button id="btnA1ToA2" class="primary" type="button">RBCから検索へ</button>
+            <button id="btnA1ToA4" class="secondary" type="button">出題ランキングから検索へ</button>
           </div>
         </div>
       </div>
@@ -714,7 +714,7 @@
       <!-- A-2 RBCから検索画面 -->
       <div id="viewA2" class="view">
         <div class="view-header">
-          <h2 class="view-title">A-2 RBCから検索</h2>
+          <h2 class="view-title">RBCから検索</h2>
           <p class="subtitle">章とRBCを選んで対象問題を確認します。</p>
         </div>
 
@@ -800,7 +800,7 @@
       <!-- A-3 問題詳細画面 -->
       <div id="viewA3" class="view">
         <div class="view-header">
-          <h2 class="view-title">A-3 問題詳細</h2>
+          <h2 class="view-title">問題詳細</h2>
           <p class="subtitle">問題の詳細と解説を確認します。</p>
         </div>
 
@@ -808,8 +808,8 @@
           <div id="a3Code">問題番号</div>
           <div class="a3-actions">
             <button id="a3EditToggleButton" class="primary">編集</button>
-            <button id="btnA3BackToA2" class="secondary" type="button">前の検索へ（A-2に戻る）</button>
-            <button id="btnA3BackToA4" class="secondary" type="button" style="display:none;">出題ランキングに戻る（A-4）</button>
+            <button id="btnA3BackToA2" class="secondary" type="button">前の検索へ</button>
+            <button id="btnA3BackToA4" class="secondary" type="button" style="display:none;">出題ランキングに戻る</button>
           </div>
         </div>
 
@@ -887,7 +887,7 @@
       <!-- A-4 出題ランキング画面 -->
       <div id="viewA4" class="view">
         <div class="view-header">
-          <h2 class="view-title">A-4 出題ランキングから検索</h2>
+          <h2 class="view-title">出題ランキングから検索</h2>
           <p class="subtitle">出題数が多いRBCをランキング表示します。</p>
         </div>
 
@@ -929,7 +929,7 @@
           <div id="a4RankingTable"></div>
         </div>
 
-        <button id="btnA4BackToA1" class="secondary" type="button">ホーム（A-1）に戻る</button>
+        <button id="btnA4BackToA1" class="secondary" type="button">ホームに戻る</button>
       </div>
     </main>
   </div>
@@ -951,10 +951,10 @@
     const navA4 = document.getElementById("navA4");
     const currentViewLabel = document.getElementById("currentViewLabel");
     const viewNameMap = {
-      A1: "A-1 ホーム",
-      A2: "A-2 RBCから検索",
-      A3: "A-3 問題詳細",
-      A4: "A-4 出題ランキング",
+      A1: "ホーム",
+      A2: "RBCから検索",
+      A3: "問題詳細",
+      A4: "出題ランキング",
     };
 
     const toast = document.getElementById("toast");
